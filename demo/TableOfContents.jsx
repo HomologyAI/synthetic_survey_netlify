@@ -266,26 +266,6 @@ const TableOfContents = ({ data, interviewRecords }) => {
               </div>
             ))}
 
-            {/* 决策建议 */}
-            <a
-              href="#totalAnalysis"
-              style={{
-                display: "block",
-                fontSize: "0.875rem",
-                fontWeight: "medium",
-                transition: "color 200ms",
-                color: activeSection === "totalAnalysis" ? "#3a7e6d" : "gray",
-                cursor: "pointer",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#3a7e6d")}
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.color =
-                  activeSection === "totalAnalysis" ? "#3a7e6d" : "gray")
-              }
-            >
-              决策建议
-            </a>
-
             {/* 详细统计 */}
             <div>
               <a
