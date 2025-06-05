@@ -17,7 +17,7 @@ import {
   ResponsiveContainer,
   TooltipProps,
 } from "recharts";
-import response from "./data/None_1004_gemini-2.5-pro-preview-05-06_202506030048_yixing.json";
+import response from "./data/None_1004_gemini-2.5-pro-preview-05-06_20250605_0002_linkerZ0_latest_retry.json";
 import TableOfContents from "../../demo/TableOfContents";
 import remarkGfm from "remark-gfm";
 
@@ -58,6 +58,132 @@ const CustomTooltip = ({ active, payload, total }) => {
     );
   }
   return null;
+};
+
+// New component to parse and render structured text content like in test.html
+const StructuredTextRenderer = ({ textContent }) => {
+  const [parsedContent, setParsedContent] = useState('');
+
+  useEffect(() => {
+    if (!textContent) {
+      setParsedContent('');
+      return;
+    }
+
+    const lines = textContent.trim().replace(/\r\n/g, '\n').split('\n');
+    let htmlParts = [];
+    let currentListType = null; // 'ul', 'ol', or null
+    let lastElementType = ''; // To track context
+
+    // Regexes
+    const sectionHeaderStartRegex = /^(\d+)\.\s(.+)$/;
+    const subsectionHeaderStartRegex = /^▍(.+)$/;
+    const ulItemStartRegex = /^- (.+)$/;
+
+    // Helper to close any open list
+    function closeList() {
+      if (currentListType === 'ul') {
+        htmlParts.push('</ul>');
+      } else if (currentListType === 'ol') {
+        htmlParts.push('</ol>');
+      }
+      currentListType = null;
+    }
+
+    // Process the first line as the main report title
+    let startIndex = 0;
+    if (lines.length > 0) {
+      htmlParts.push(`<h1 class="structured-report-title" id="reportTitle">${lines[0].trim()}</h1>`);
+      lastElementType = 'title';
+      startIndex = 1;
+    }
+
+    // Process the rest of the lines
+    for (let i = startIndex; i < lines.length; i++) {
+      const line = lines[i].trim();
+
+      if (!line) {
+        closeList();
+        lastElementType = 'empty-line';
+        continue;
+      }
+
+      let processed = false;
+
+      // Priority 1: Subsection Header (▍)
+      const subsectionMatch = line.match(subsectionHeaderStartRegex);
+      if (subsectionMatch) {
+        closeList();
+        const subsectionId = subsectionMatch[1].replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '').toLowerCase();
+        htmlParts.push(`<h3 class="structured-subsection-header" id="${subsectionId}">${subsectionMatch[1]}</h3>`);
+        lastElementType = 'subsection-header';
+        processed = true;
+      } 
+      // Priority 2: Unordered List Item (-)
+      else {
+        const ulItemMatch = line.match(ulItemStartRegex);
+        if (ulItemMatch) {
+          if (currentListType !== 'ul') {
+            closeList();
+            htmlParts.push('<ul class="structured-ul">');
+            currentListType = 'ul';
+          }
+          htmlParts.push(`<li class="structured-li">${ulItemMatch[1]}</li>`);
+          lastElementType = 'li';
+          processed = true;
+        } 
+        // Priority 3: Numbered Line
+        else {
+          const numLineMatch = line.match(sectionHeaderStartRegex);
+          if (numLineMatch) {
+            const lineNumber = parseInt(numLineMatch[1]);
+            
+            const isPlainOrderedListItem = 
+              (lastElementType === 'subsection-header') ||
+              (currentListType === 'ol') ||
+              (lineNumber === 1 && lastElementType === 'p' && i > 0 && !lines[i-1].trim().match(sectionHeaderStartRegex)); 
+
+            if (isPlainOrderedListItem) {
+              if (currentListType !== 'ol') {
+                closeList();
+                htmlParts.push('<ol class="structured-ol">');
+                currentListType = 'ol';
+              }
+              htmlParts.push(`<li class="structured-li">${numLineMatch[2]}</li>`);
+              lastElementType = 'li';
+              processed = true;
+            } else {
+              closeList();
+              // Generate ID from section text
+              const sectionId = numLineMatch[2].replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '').toLowerCase();
+              htmlParts.push(`<div class="structured-section-header" id="${sectionId}"><strong>${numLineMatch[1]}.</strong> ${numLineMatch[2]}</div>`);
+              lastElementType = 'section-header';
+              processed = true;
+            }
+          }
+        }
+      }
+
+      // If no specific pattern matched, treat as a paragraph
+      if (!processed) {
+        closeList();
+        htmlParts.push(`<p class="structured-p">${line}</p>`);
+        lastElementType = 'p';
+      }
+    }
+
+    // Final check to close any open list at the end of the document
+    closeList();
+
+    setParsedContent(htmlParts.join(''));
+  }, [textContent]);
+
+  return (
+    <div 
+      className="structured-text-container"
+      dangerouslySetInnerHTML={{ __html: parsedContent }}
+    />
+  );
 };
 
 const QuestionStats = ({ index, questionData, globalExpand }) => {
@@ -355,6 +481,20 @@ const SyntheticSurveyPageContainer = () => {
   .pie-chart-container { grid-column: span 1; display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
   .full-width-container { grid-column: 1 / -1 !important; width: 100%; }
   .full-width-container .chart-container { max-width: 100%; margin: 0 auto; }
+  .report-container { max-width: 90%; margin: 0 auto; padding: 0; }
+  
+  /* Structured text styles from test.html */
+  .structured-text-container { font-family: 'Segoe UI', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif; color: #333; line-height: 1.6; }
+  .structured-report-title { background-color: #4A70B8; color: #fff; text-align: center; padding: 20px; margin: 20px -30px 30px -30px; font-size: 2.2em; font-weight: normal; }
+  .structured-section-header { background-color: #F0F4F7; padding: 10px 15px; margin-bottom: 25px; font-size: 1.5em; font-weight: bold; color: #333; border-left: 5px solid #4A70B8; }
+  .structured-section-header strong { font-weight: bold; color: #4A70B8; }
+  .structured-subsection-header { font-size: 1.2em; font-weight: bold; margin-top: 25px; margin-bottom: 15px; color: #333; position: relative; padding-left: 15px; }
+  .structured-subsection-header::before { content: '▍'; color: #4A70B8; font-size: 1.1em; position: absolute; left: 0; top: 0; }
+  .structured-ul { list-style: disc; margin-left: 20px; padding-left: 0; margin-bottom: 20px; }
+  .structured-ol { list-style: decimal; margin-left: 20px; padding-left: 0; margin-bottom: 20px; }
+  .structured-li { margin-bottom: 10px; }
+  .structured-p { margin-bottom: 15px; }
+  
   @media (max-width: 768px) { .report-section { grid-template-columns: 1fr; } .pie-chart-container, .full-width-container { grid-column: 1 / -1; } }
   @media print { body { padding: 0; margin: 0; } .container { box-shadow: none; border-radius: 0; padding: 10px; max-width: 100%; } h1 { font-size: 1.5rem; margin-bottom: 20px; padding-bottom: 10px; } .summary-box, .question-summary-box { margin-bottom: 20px; padding: 10px; } .question-section { border: 1px solid #ccc; margin-bottom: 20px; padding: 15px; } .question-title { font-size: 1.1rem; margin-bottom: 15px; padding-bottom: 8px; } .toggle-btn { display: none; } .hidden { display: block !important; } #interviewRecords { margin-top: 30px; } .chart-container { height: 250px; } script { display: none; } }`;
   return (
@@ -362,16 +502,9 @@ const SyntheticSurveyPageContainer = () => {
       <style>{reportStyles}</style>
       <TableOfContents data={data} interviewRecords={interviews} />
       <div className="report-container">
-        <h1 className="report-title" id="reportTitle">
-          {data.raw_survey?.topic ? `${data.raw_survey.topic} - 调查结果报告` : "调查结果报告"}
-        </h1>
-        <div className="summary-section">
-          <h2 className="text-[#3a7e6d] text-2xl font-bold mb-4 mt-10 border-b pb-2" id="totalAnalysis">总体分析</h2>
-          <div className="summary-box">
-            <ReactMarkdown components={MarkdownComponents}>
-              {fixMarkdownStrong(data.total_summary || "*未提供总体总结。*")}
-            </ReactMarkdown>
-          </div>
+        {/* Replaced summary-section with StructuredTextRenderer */}
+        <div className="summary-section" id="totalAnalysis">
+        <StructuredTextRenderer textContent={data.total_summary || "*未提供总体总结。*"} />
           <h2 className="text-[#3a7e6d] text-2xl font-bold mb-4 mt-10 border-b pb-2" id="totalAnalysis">决策建议</h2>
           <div className="summary-box">
             <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
@@ -379,6 +512,7 @@ const SyntheticSurveyPageContainer = () => {
             </ReactMarkdown>
           </div>
         </div>
+        
         <h2 className="text-[#3a7e6d] text-2xl font-bold mb-4 mt-10 border-b pb-2" id="detailedStats">详细统计</h2>
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
           <button

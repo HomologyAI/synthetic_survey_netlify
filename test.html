@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>领克Z10 用户深度洞察报告</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4; /* Light grey background for the page */
+            color: #333; /* Dark grey for general text */
+            line-height: 1.6;
+        }
+
+        .report-container { /* Renamed from .container to avoid potential conflicts and be more specific */
+            max-width: 800px; /* Max width for content, similar to a PDF page */
+            margin: 20px auto; /* Center the container with some margin */
+            background-color: #fff; /* White background for the content area */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+            padding: 30px; /* Padding inside the content area */
+        }
+
+        /* Main Report Title */
+        .report-title {
+            background-color: #4A70B8; /* Blue background */
+            color: #fff; /* White text */
+            text-align: center;
+            padding: 20px;
+            /* Adjust margin to extend full width of container, visually matching PDF */
+            margin: -30px -30px 30px -30px;
+            font-size: 2.2em;
+            font-weight: normal;
+        }
+
+        /* Section Headers (e.g., "1. 社会学特征...") - These get the prominent blue background and border */
+        .section-header {
+            background-color: #F0F4F7; /* Very light blue/grey background for the section box */
+            padding: 10px 15px;
+            margin-bottom: 25px;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333; /* Dark text */
+            border-left: 5px solid #4A70B8; /* Blue accent bar on the left */
+        }
+        .section-header strong {
+            font-weight: bold;
+            color: #4A70B8; /* Make the number itself blue */
+        }
+
+        /* Sub-section Headers (e.g., "▍用户画像总结") - These get the '▍' marker */
+        .subsection-header {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            color: #333;
+            position: relative; /* Needed for absolute positioning of ::before */
+            padding-left: 15px; /* Create space for the pseudo-element marker */
+        }
+        .subsection-header::before {
+            content: '▍'; /* The marker character */
+            color: #4A70B8; /* Blue color for the marker */
+            font-size: 1.1em; /* Slightly larger marker */
+            position: absolute;
+            left: 0; /* Position at the left edge of the padding */
+            top: 0; /* Align with the top of the text */
+        }
+
+        /* Bullet Point Lists */
+        ul {
+            list-style: disc; /* Standard disc bullet points */
+            margin-left: 20px; /* Indent the list */
+            padding-left: 0; /* No extra padding */
+            margin-bottom: 20px;
+        }
+        /* Numbered Lists (e.g., "1. 续航无忧..." under "▍主要关注因素" or "1. 产品端..." under "综合结语") */
+        /* These are styled plainly as requested, distinct from .section-header */
+        ol {
+            list-style: decimal; /* Standard decimal numbering */
+            margin-left: 20px; /* Indent the list */
+            padding-left: 0; /* No extra padding */
+            margin-bottom: 20px;
+        }
+        li {
+            margin-bottom: 10px; /* Spacing between list items */
+        }
+        p {
+            margin-bottom: 15px; /* Spacing between paragraphs */
+        }
+    </style>
+</head>
+<body>
+    <div id="report-container" class="report-container">
+        <!-- Content will be dynamically inserted here by JavaScript -->
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // The full text content to be parsed.
+            const textContent = "领克Z10 用户深度洞察报告\n\n1. 社会学特征 – 用户画像与消费观念  \n▍用户画像总结  \n- 年龄跨度覆盖28-55岁，主力为30-45岁新中产及城市中坚家庭（公务员/事业单位、教师、医生、企业中高管、制造/服务业技术骨干、小微企业主等）。既有一线/新一线城市（如杭州、成都、南京、苏州、无锡、青岛、合肥、长沙等）高学历高收入家庭，也有大量二三线城市的理性务实型购车者。  \n- 家庭结构以已婚有孩/多代同堂为主，部分用户已进入“家庭升级”阶段，对空间、安全、舒适性和实用性有强需求。  \n- 消费观念整体理性，注重实用价值、性价比和长期使用成本。对新技术持开放但务实态度，倾向选择成熟、可靠、稳定的产品。品牌认同度建立在产品体验和技术实力基础上，不盲目追求豪华溢价，更看重真实体验和口碑。  \n▍消费观念特征  \n- 强调家庭用车的安全性、空间舒适性和经济性，品牌形象以“年轻、设计感强、科技感、沃尔沃安全基因”为信任锚点。  \n- 对智能化、科技配置有较高期待，但更关注其实际便利性与长期维护成本。购车决策强调“用得住、用得起、省心省力”，兼顾“面子”与“里子”。  \n- 购车资金以家庭积蓄和贷款结合为主，部分高收入群体全款，无明显消费焦虑。  \n▍代表性用户原话  \n- “车不仅仅是交通工具，更是家庭生活品质的体现。”  \n- “既要外观有辨识度，又要空间实用、配置到位，安全性是底线。”  \n- “技术再新，也要先看稳定性和后期维护，不想为噱头买单。”\n\n2. 行为背景 – 使用/购买/体验背景与关注重点  \n▍背景总结  \n- 多为已有多年燃油车（如帕萨特、凯美瑞、雅阁、老SUV等）用户，因空间、智能化、油耗、配置等原因换车升级，或首次新能源尝鲜。  \n- 主要购车动因：家庭结构升级（添二胎或老人同住）、老车油耗高/故障多、对智能化/舒适配置有更高需求、城市限行/环保政策驱动。  \n- 信息获取渠道以汽车之家、懂车帝、小红书、抖音、B站等为主，重视KOL测评和真实车主分享。决策流程为线上种草/对比→多轮试驾/实地体验→全家讨论/朋友推荐→最终下单。  \n▍主要关注因素（按优先级）  \n1. 续航无忧（尤其长途、冬季表现）  \n2. 空间舒适性与安全配置  \n3. 外观设计与品牌调性  \n4. 智能座舱流畅度与功能丰富度  \n5. 性价比/购车及用车经济性  \n6. 智能驾驶辅助的实用性和稳定性  \n7. 售后服务、维护成本及保值率  \n▍代表性用户原话  \n- “冬季高速长途续航衰减仍有顾虑，希望能有技术突破。”  \n- “家庭用车，空间、舒适、安全是基本面，续航和充电不能掉链子。”  \n- “不想再为老车小毛病和高油耗操心了。”\n\n3. 决策旅程 – 对比竞品与决策动因  \n▍典型对比对象  \n- 纯电/混动竞品：比亚迪汉DM-i/EV、极氪001、极氪007、腾势N7、小米SU7、特斯拉Model 3、小鹏P7、小鹏P7i、智己L6、蔚来ET5、凯美瑞双擎等。  \n- 传统合资/自主高端轿车/SUV（如奥迪A4L、迈腾、星瑞L等）为部分用户备选。  \n▍核心决策动因  \n- Z10以原创轿跑造型、宽敞空间、底盘操控、沃尔沃安全背书和智能座舱体验获得高分。  \n- EMP混动系统被视为“补齐纯电短板”的关键，能有效解决长途/冬季续航焦虑，兼顾城市通勤经济性与长途出行便利性。  \n- 决策核心为“颜值+实用+经济+无忧”，即兼具家庭实用需求与个性品味，同时保证用车省心。  \n▍决策路径逻辑  \n线上信息收集/种草 → 竞品对比/参数分析 → 线下试驾/全家体验 → 朋友/同事口碑验证 → 预算/金融方案评估 → 最终决策  \n▍代表性用户原话  \n- “Z10打破了对电动车驾驶乐趣不足的刻板印象。”  \n- “EMP混动出来，纯电的痛点就都解决了。”  \n- “比亚迪汉DM-i虽然技术成熟，但Z10设计更有品味。”\n\n4. 使用场景与体验反馈  \n▍典型使用场景  \n- 日常城市通勤（8-20公里单程）、周末家庭短途出游（50-300公里）、节假日/寒暑假长途返乡或自驾游（300-1000公里）、偶尔商务接待/采购。  \n▍使用重点体验  \n- 外观辨识度高，溜背造型回头率强；底盘扎实，驾驶乐趣超越主流电车；座舱宽敞，后排/后备箱空间满足多口之家；座椅舒适功能（通风、加热、按摩）获高分。Flyme Auto智能座舱流畅、功能丰富，哈曼卡顿音响加分。高速NOA/ACC智能驾驶表现可靠，城市NOA/泊车辅助有优化空间。冬季纯电续航衰减、充电排队为主要痛点，部分用户对车机生态和细节品控有提升需求。  \n▍代表性用户原话  \n- “底盘扎实，过弯支撑好，开起来不像普通电车那么飘。”  \n- “后排空间宽敞，孩子在后排活动自如，老人坐着也舒服。”  \n- “冬季高速长途还是焦虑，EMP混动就能解决这个问题。”\n\n5. 更多期待 – 产品、品牌、服务层面  \n▍产品期待  \n- EMP混动版本续航和能耗表现优异，动力切换平顺，能量管理模式简洁明了；纯电续航提升，充电速度更快，低温表现更扎实；内饰、储物空间更人性化，智能座舱生态更开放（支持更多第三方App）；智能驾驶/泊车辅助在城市复杂路况下更稳定可靠。  \n▍品牌期待  \n- 强化“旗舰轿跑”定位和底盘操控优势，突出年轻、设计感、科技感与沃尔沃安全基因；真实用户口碑和场景化传播，减少花哨堆料，提升技术透明度和易用性。  \n▍服务期待  \n- 售后服务专业、响应快，维护成本合理、透明，电池/混动系统质保政策清晰；销售顾问懂技术、懂场景，能用通俗语言解答用户疑虑；试驾体验更丰富，覆盖多种真实用车场景。  \n▍代表性用户原话  \n- “EMP版本能解决所有续航焦虑，价格如果合理，绝对有市场。”  \n- “希望能有更简洁直观的能量管理界面，别让我们还要搞懂一堆技术名词。”  \n- “销售顾问要能结合我的用车场景讲EMP系统的优势，别光说参数。”\n\n6. 综合结语  \n领克Z10已凭借独特轿跑设计、优异操控、宽敞空间和智能座舱体验在新中产及理性家庭用户中建立了鲜明差异化形象。EMP混动版本是用户普遍期待的“全能补位”，有望彻底解决纯电用户的续航和补能焦虑，进一步强化Z10的实用性和市场竞争力。  \n要真正赢得中高端新能源轿车用户，Z10/EMP需做到三点：  \n1. 产品端——“真实全能”：续航无忧、动力平顺、空间舒适、智驾实用，能量管理与智能体验简洁直观，配置不缩水，细节更贴心。  \n2. 品牌端——“场景共情”：以家庭和个人真实用车故事为核心，强化底盘驾驶乐趣、安全基因与智能科技三位一体的品牌形象，减少空洞技术堆叠。  \n3. 服务端——“专业省心”：售后网络完善，技术人员培训到位，维护成本透明，销售顾问能以专业、生活化语言解答用户真实疑虑，试驾体验场景化。  \n\n领克Z10要在30万级新能源轿车市场突围，必须坚持“驾驶乐趣+家庭实用+科技体验”融合的产品哲学，持续打磨混动技术和用户体验，强化用户口碑和场景价值表达，才能在激烈竞争中占据用户心智高地，成为“既有面子又有里子”的首选混动旗舰轿车。";
+
+            const reportContainer = document.getElementById('report-container');
+            const lines = textContent.trim().replace(/\r\n/g, '\n').split('\n');
+            let htmlParts = [];
+            let currentListType = null; // 'ul', 'ol', or null
+            let lastElementType = ''; // To track context: 'section-header', 'subsection-header', 'li', 'p', 'title', 'empty-line'
+
+            // Regexes
+            const sectionHeaderStartRegex = /^(\d+)\.\s(.+)$/; // Matches "N. Text" for either type
+            const subsectionHeaderStartRegex = /^▍(.+)$/;      // Matches "▍Text"
+            const ulItemStartRegex = /^- (.+)$/;               // Matches "- Text"
+
+            // Helper to close any open list
+            function closeList() {
+                if (currentListType === 'ul') {
+                    htmlParts.push('</ul>');
+                } else if (currentListType === 'ol') {
+                    htmlParts.push('</ol>');
+                }
+                currentListType = null;
+            }
+
+            // Process the first line as the main report title
+            if (lines.length > 0) {
+                htmlParts.push(`<h1 class="report-title">${lines[0].trim()}</h1>`);
+                lastElementType = 'title';
+            }
+
+            // Process the rest of the lines
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+
+                if (!line) {
+                    closeList();
+                    lastElementType = 'empty-line';
+                    continue;
+                }
+
+                let processed = false;
+
+                // Priority 1: Subsection Header (▍) - most distinct pattern
+                const subsectionMatch = line.match(subsectionHeaderStartRegex);
+                if (subsectionMatch) {
+                    closeList();
+                    htmlParts.push(`<h3 class="subsection-header">${subsectionMatch[1]}</h3>`);
+                    lastElementType = 'subsection-header';
+                    processed = true;
+                } 
+                // Priority 2: Unordered List Item (-) - also distinct pattern
+                else {
+                    const ulItemMatch = line.match(ulItemStartRegex);
+                    if (ulItemMatch) {
+                        if (currentListType !== 'ul') {
+                            closeList();
+                            htmlParts.push('<ul>');
+                            currentListType = 'ul';
+                        }
+                        htmlParts.push(`<li>${ulItemMatch[1]}</li>`);
+                        lastElementType = 'li'; // Mark as a list item
+                        processed = true;
+                    } 
+                    // Priority 3: Numbered Line (N. ) - requires contextual check
+                    else {
+                        const numLineMatch = line.match(sectionHeaderStartRegex); // Use same regex for "N. Text"
+                        if (numLineMatch) {
+                            const lineNumber = parseInt(numLineMatch[1]);
+                            
+                            // Determine if it's a plain ordered list item or a main section header
+                            // It's a plain list item if:
+                            // 1. It directly follows a '▍' subsection header.
+                            // 2. It's a continuation of an ordered list (currentListType === 'ol').
+                            // 3. It's the start of an ordered list after a paragraph (e.g., in "综合结语" where "1. 产品端..." follows a <p>
+                            //    and the line number is 1, AND the line before wasn't a section header itself to prevent false positives).
+                            const isPlainOrderedListItem = 
+                                (lastElementType === 'subsection-header') ||
+                                (currentListType === 'ol') ||
+                                (lineNumber === 1 && lastElementType === 'p' && i > 0 && !lines[i-1].trim().match(sectionHeaderStartRegex)); 
+
+                            if (isPlainOrderedListItem) {
+                                if (currentListType !== 'ol') {
+                                    closeList();
+                                    htmlParts.push('<ol>');
+                                    currentListType = 'ol';
+                                }
+                                htmlParts.push(`<li>${numLineMatch[2]}</li>`);
+                                lastElementType = 'li'; // Mark as a list item
+                                processed = true;
+                            } else {
+                                // It must be a main section header
+                                closeList();
+                                htmlParts.push(`<div class="section-header"><strong>${numLineMatch[1]}.</strong> ${numLineMatch[2]}</div>`);
+                                lastElementType = 'section-header';
+                                processed = true;
+                            }
+                        }
+                    }
+                }
+
+                // If no specific pattern matched, treat as a paragraph
+                if (!processed) {
+                    closeList();
+                    htmlParts.push(`<p>${line}</p>`);
+                    lastElementType = 'p';
+                }
+            }
+
+            // Final check to close any open list at the end of the document
+            closeList();
+
+            reportContainer.innerHTML = htmlParts.join('');
+        });
+    </script>
+</body>
+</html>
