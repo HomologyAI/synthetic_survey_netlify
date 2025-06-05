@@ -5,7 +5,7 @@ const TableOfContents = ({ data, interviewRecords }) => {
   const [activeSection, setActiveSection] = useState("");
   const [structuredSections, setStructuredSections] = useState([]);
 
-  // Parse structured text content to extract sections
+  // Parse structured text content to extract only first-level sections
   useEffect(() => {
     if (!data?.total_summary) {
       setStructuredSections([]);
@@ -15,73 +15,72 @@ const TableOfContents = ({ data, interviewRecords }) => {
     const lines = data.total_summary.trim().replace(/\r\n/g, '\n').split('\n');
     const sections = [];
     
-    // Regexes - same as StructuredTextRenderer
+    // Regexes for both section headers and subsection headers
     const sectionHeaderStartRegex = /^(\d+)\.\s(.+)$/;
     const subsectionHeaderStartRegex = /^▍(.+)$/;
     
     let lastElementType = '';
+    let currentListType = null;
     let startIndex = 1; // Skip title line
     
     for (let i = startIndex; i < lines.length; i++) {
       const line = lines[i].trim();
+      
       if (!line) {
+        currentListType = null;
         lastElementType = 'empty-line';
         continue;
       }
 
-      // Check for subsection header
+      let processed = false;
+
+      // Check for subsection header (▍) - track context but don't add to TOC
       const subsectionMatch = line.match(subsectionHeaderStartRegex);
       if (subsectionMatch) {
-        const subsectionId = subsectionMatch[1].replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '').toLowerCase();
-        sections.push({
-          type: 'subsection',
-          title: subsectionMatch[1],
-          id: subsectionId
-        });
+        currentListType = null;
         lastElementType = 'subsection-header';
-        continue;
-      }
+        processed = true;
+      } 
+      // Check for numbered lines
+      else {
+        const numLineMatch = line.match(sectionHeaderStartRegex);
+        if (numLineMatch) {
+          const lineNumber = parseInt(numLineMatch[1]);
+          
+          // Determine if this is a list item or a section header
+          const isPlainOrderedListItem = 
+            (lastElementType === 'subsection-header') ||
+            (currentListType === 'ol') ||
+            (lineNumber === 1 && lastElementType === 'p' && i > 0 && !lines[i-1].trim().match(sectionHeaderStartRegex));
 
-      // Check for section header
-      const numLineMatch = line.match(sectionHeaderStartRegex);
-      if (numLineMatch) {
-        const lineNumber = parseInt(numLineMatch[1]);
-        
-        // Same logic as StructuredTextRenderer to determine if it's a section header
-        const isPlainOrderedListItem = 
-          (lastElementType === 'subsection-header') ||
-          (lineNumber === 1 && lastElementType === 'p' && i > 0 && !lines[i-1].trim().match(sectionHeaderStartRegex));
-
-        if (!isPlainOrderedListItem) {
-          const sectionId = numLineMatch[2].replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '').toLowerCase();
-          sections.push({
-            type: 'section',
-            title: `${numLineMatch[1]}. ${numLineMatch[2]}`,
-            id: sectionId,
-            subsections: []
-          });
-          lastElementType = 'section-header';
-          continue;
+          if (isPlainOrderedListItem) {
+            // This is a list item, not a section header
+            currentListType = 'ol';
+            lastElementType = 'li';
+            processed = true;
+          } else {
+            // This is a main section header - add to TOC
+            currentListType = null;
+            const sectionId = numLineMatch[2].replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '').toLowerCase();
+            sections.push({
+              type: 'section',
+              title: `${numLineMatch[1]}. ${numLineMatch[2]}`,
+              id: sectionId
+            });
+            lastElementType = 'section-header';
+            processed = true;
+          }
         }
       }
 
-      lastElementType = 'p';
+      // If no specific pattern matched, treat as paragraph
+      if (!processed) {
+        currentListType = null;
+        lastElementType = 'p';
+      }
     }
 
-    // Group subsections under their parent sections
-    const groupedSections = [];
-    let currentSection = null;
-
-    sections.forEach(item => {
-      if (item.type === 'section') {
-        currentSection = { ...item, subsections: [] };
-        groupedSections.push(currentSection);
-      } else if (item.type === 'subsection' && currentSection) {
-        currentSection.subsections.push(item);
-      }
-    });
-
-    setStructuredSections(groupedSections);
+    setStructuredSections(sections);
   }, [data?.total_summary]);
 
   // 监听滚动，更新当前激活的章节
@@ -200,70 +199,27 @@ const TableOfContents = ({ data, interviewRecords }) => {
               报告标题
             </a>
 
-            {/* 动态生成的结构化章节 */}
+            {/* 动态生成的第一级章节 */}
             {structuredSections.map((section, sectionIndex) => (
-              <div key={sectionIndex}>
-                <a
-                  href={`#${section.id}`}
-                  style={{
-                    display: "block",
-                    fontSize: "0.875rem",
-                    fontWeight: "medium",
-                    transition: "color 200ms",
-                    color: activeSection === section.id ? "#3a7e6d" : "gray",
-                    cursor: "pointer",
-                    marginBottom: section.subsections.length > 0 ? "0.5rem" : "0",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "#3a7e6d")}
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.color =
-                      activeSection === section.id ? "#3a7e6d" : "gray")
-                  }
-                >
-                  {section.title}
-                </a>
-                
-                {/* 子章节 */}
-                {section.subsections.length > 0 && (
-                  <div
-                    style={{
-                      marginLeft: "1rem",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "0.25rem",
-                      marginBottom: "0.5rem",
-                    }}
-                  >
-                    {section.subsections.map((subsection, subsectionIndex) => (
-                      <a
-                        key={subsectionIndex}
-                        href={`#${subsection.id}`}
-                        style={{
-                          display: "block",
-                          fontSize: "0.75rem",
-                          transition: "color 200ms",
-                          color:
-                            activeSection === subsection.id
-                              ? "#3a7e6d"
-                              : "#888",
-                          cursor: "pointer",
-                        }}
-                        onMouseEnter={(e) =>
-                          (e.currentTarget.style.color = "#3a7e6d")
-                        }
-                        onMouseLeave={(e) =>
-                          (e.currentTarget.style.color =
-                            activeSection === subsection.id
-                              ? "#3a7e6d"
-                              : "#888")
-                        }
-                      >
-                        ▍{subsection.title}
-                      </a>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <a
+                key={sectionIndex}
+                href={`#${section.id}`}
+                style={{
+                  display: "block",
+                  fontSize: "0.875rem",
+                  fontWeight: "medium",
+                  transition: "color 200ms",
+                  color: activeSection === section.id ? "#3a7e6d" : "gray",
+                  cursor: "pointer",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "#3a7e6d")}
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.color =
+                    activeSection === section.id ? "#3a7e6d" : "gray")
+                }
+              >
+                {section.title}
+              </a>
             ))}
 
             {/* 详细统计 */}
