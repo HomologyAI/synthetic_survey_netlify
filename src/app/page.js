@@ -505,12 +505,6 @@ const SyntheticSurveyPageContainer = () => {
         {/* Replaced summary-section with StructuredTextRenderer */}
         <div className="summary-section" id="totalAnalysis">
         <StructuredTextRenderer textContent={data.total_summary || "*未提供总体总结。*"} />
-          <h2 className="text-[#3a7e6d] text-2xl font-bold mb-4 mt-10 border-b pb-2" id="totalAnalysis">决策建议</h2>
-          <div className="summary-box">
-            <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
-              {fixMarkdownStrong(data.suggestion) || "*未提供总体总结。*"}
-            </ReactMarkdown>
-          </div>
         </div>
         
         <h2 className="text-[#3a7e6d] text-2xl font-bold mb-4 mt-10 border-b pb-2" id="detailedStats">详细统计</h2>
