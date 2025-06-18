@@ -166,42 +166,53 @@ const QuestionStats = ({ index, questionData, globalExpand }) => {
       <div>
         {chartType === "pie" ? (
           <div style={{ display: "flex", alignItems: "flex-start" }}>
-            <div className="chart-container" style={{ position: "static", maxWidth: 320, minWidth: 280, height: "300px" }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={chartData}
-                    cx="50%"
-                    cy="58%"
-                    labelLine={false}
-                    label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
-                      const RADIAN = Math.PI / 180;
-                      const angle = 2 * Math.PI * percent;
-                      const useLine = angle < 0.52;
-                      if (!useLine) {
-                        const radius = innerRadius + (outerRadius - innerRadius) * 0.7;
-                        const x = cx + radius * Math.cos(-midAngle * RADIAN);
-                        const y = cy + radius * Math.sin(-midAngle * RADIAN);
-                        return (
-                          <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" style={{ fontSize: "12px", fontWeight: "bold" }}>
-                            {`${(percent * 100).toFixed(1)}%`}
-                          </text>
-                        );
-                      }
-                    }}
-                    outerRadius={75}
-                    fill="#8884d8"
-                    dataKey="value"
-                    nameKey="name"
-                  >
-                    {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip total={total} />} />
-                  <Legend layout="horizontal" align="center" verticalAlign="bottom" wrapperStyle={{ fontSize: "12px", paddingTop: "10px", textAlign: "center", width: "100%" }} content={(props) => renderLegend(props)} />
-                </PieChart>
-              </ResponsiveContainer>
+            {/* New container for Chart and Legend */}
+            <div style={{ maxWidth: 320, minWidth: 280, display: 'flex', flexDirection: 'column' }}>
+                {/* 1. Chart is now in a smaller, dedicated container */}
+                <div className="chart-container" style={{ position: "static", width: '100%', height: "220px" }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                        <Pie
+                            data={chartData}
+                            cx="50%"
+                            cy="50%" 
+                            labelLine={false}
+                            label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+                                const RADIAN = Math.PI / 180;
+                                const angle = 2 * Math.PI * percent;
+                                const useLine = angle < 0.52;
+                                if (!useLine) {
+                                const radius = innerRadius + (outerRadius - innerRadius) * 0.7;
+                                const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                                const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                                return (
+                                    <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" style={{ fontSize: "12px", fontWeight: "bold" }}>
+                                    {`${(percent * 100).toFixed(1)}%`}
+                                    </text>
+                                );
+                                }
+                            }}
+                            outerRadius={80} 
+                            fill="#8884d8"
+                            dataKey="value"
+                            nameKey="name"
+                        >
+                            {chartData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                        </Pie>
+                        <Tooltip content={<CustomTooltip total={total} />} />
+                        {/* 2. Legend component is removed from here */}
+                    </PieChart>
+                    </ResponsiveContainer>
+                </div>
+                {/* 3. Legend is now rendered manually outside the chart container */}
+                {renderLegend({ 
+                    payload: chartData.map((entry, index) => ({
+                        value: entry.name,
+                        color: COLORS[index % COLORS.length]
+                    })) 
+                })}
             </div>
             <div style={{ flex: 1, marginLeft: "20px" }}>
               <div className="question-summary-box">
