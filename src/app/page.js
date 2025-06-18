@@ -41,6 +41,7 @@ const CustomTooltip = ({ active, payload, total }) => {
     const value = payload[0].value;
     const percentage =
       total > 0 ? ((value / total) * 100).toFixed(1) + "%" : "0%";
+    
     return (
       <div
         className="custom-tooltip"
@@ -50,10 +51,18 @@ const CustomTooltip = ({ active, payload, total }) => {
           border: "1px solid #ccc",
           borderRadius: "4px",
           boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
+          maxWidth: "200px"
         }}
       >
-        <p className="label" style={{ margin: "0 0 5px 0" }}>{`${payload[0].name}: ${value}`}</p>
-        <p className="percentage" style={{ margin: "0" }}>{`(${percentage})`}</p>
+        <p className="label" style={{ margin: "0 0 5px 0", fontWeight: "bold" }}>
+          {payload[0].name}
+        </p>
+        <p className="value" style={{ margin: "0 0 3px 0" }}>
+          数量: {value}
+        </p>
+        <p className="percentage" style={{ margin: "0", color: "#666" }}>
+          占比: {percentage}
+        </p>
       </div>
     );
   }
@@ -91,24 +100,63 @@ const QuestionStats = ({ index, questionData, globalExpand }) => {
   };
 
   const chartInfo = prepareChartData();
-  const chartData = Array.isArray(chartInfo)
+  let chartData = Array.isArray(chartInfo)
     ? chartInfo
     : chartInfo?.data.sort((a, b) => b.value - a.value) || [];
   const chartType = chartInfo?.chartType || "bar";
+  
+  // 对于柱形图，如果数据过多，进行省略处理
+  const MAX_BARS = 65; // 最多显示65个柱子
+  let hasMoreData = false;
+  let remainingCount = 0;
+  let remainingSum = 0;
+  if (chartType === "bar" && chartData.length > MAX_BARS) {
+    hasMoreData = true;
+    const topData = chartData.slice(0, MAX_BARS);
+    const remainingData = chartData.slice(MAX_BARS);
+    remainingSum = remainingData.reduce((sum, item) => sum + item.value, 0);
+    remainingCount = remainingData.length;
+    
+    chartData = topData;
+  }
+  
   const total = chartData.reduce((sum, entry) => sum + entry.value, 0);
   const containerClassName = `question-section full-width-container`;
   const toggleOptions = () => setShowOptions(!showOptions);
   const renderLegend = (props) => {
     const { payload } = props;
     return (
-      <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", alignItems: "flex-start", marginRight: "5px" }}>
+      <div style={{
+        display: "flex", 
+        justifyContent: "center", 
+        alignItems: "center", 
+        flexWrap: "wrap", 
+        width: "100%", 
+        gap: "12px",
+        paddingTop: "8px"
+      }}>
         {payload?.map((entry, index) => (
-          <li key={`item-${index}`} style={{ display: "flex", alignItems: "center", marginBottom: "12px" }}>
-            <div style={{ width: "10px", height: "10px", backgroundColor: entry.color, marginRight: "5px", flexShrink: 0 }} />
-            <span style={{ fontSize: "12px" }}>{entry.value}</span>
-          </li>
+          <div key={`item-${index}`} style={{ 
+            display: "flex", 
+            alignItems: "center", 
+            fontSize: "12px",
+            whiteSpace: "nowrap"
+          }}>
+                         <div 
+              style={{ 
+                width: "12px", 
+                height: "12px", 
+                backgroundColor: entry.color,
+                marginRight: "4px",
+                flexShrink: 0,
+                border: `2px solid ${entry.color}`,
+                boxSizing: "border-box"
+              }} 
+            />
+            <span>{entry.value}</span>
+          </div>
         ))}
-      </ul>
+      </div>
     );
   };
 
@@ -117,14 +165,14 @@ const QuestionStats = ({ index, questionData, globalExpand }) => {
       <h3 className="question-title">{questionData.question}</h3>
       <div>
         {chartType === "pie" ? (
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <div className="chart-container" style={{ position: "static", maxWidth: 600 }}>
+          <div style={{ display: "flex", alignItems: "flex-start" }}>
+            <div className="chart-container" style={{ position: "static", maxWidth: 320, minWidth: 280, height: "300px" }}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={chartData}
-                    cx="49%"
-                    cy={95}
+                    cx="50%"
+                    cy="58%"
                     labelLine={false}
                     label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
                       const RADIAN = Math.PI / 180;
@@ -135,13 +183,13 @@ const QuestionStats = ({ index, questionData, globalExpand }) => {
                         const x = cx + radius * Math.cos(-midAngle * RADIAN);
                         const y = cy + radius * Math.sin(-midAngle * RADIAN);
                         return (
-                          <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" style={{ fontSize: "14px", fontWeight: "bold" }}>
+                          <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" style={{ fontSize: "12px", fontWeight: "bold" }}>
                             {`${(percent * 100).toFixed(1)}%`}
                           </text>
                         );
                       }
                     }}
-                    outerRadius={95}
+                    outerRadius={75}
                     fill="#8884d8"
                     dataKey="value"
                     nameKey="name"
@@ -151,14 +199,14 @@ const QuestionStats = ({ index, questionData, globalExpand }) => {
                     ))}
                   </Pie>
                   <Tooltip content={<CustomTooltip total={total} />} />
-                  <Legend layout="vertical" align="left" verticalAlign="middle" wrapperStyle={{ maxWidth: "50%", overflowWrap: "break-word" }} content={(props) => renderLegend(props)} />
+                  <Legend layout="horizontal" align="center" verticalAlign="bottom" wrapperStyle={{ fontSize: "12px", paddingTop: "10px", textAlign: "center", width: "100%" }} content={(props) => renderLegend(props)} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1, marginLeft: "20px" }}>
               <div className="question-summary-box">
                 <h4>结果分析与总结</h4>
-                <div className="markdown-content">
+                <div className="markdown-content text-sm">
                   <ReactMarkdown components={MarkdownComponents}>
                     {fixMarkdownStrong(questionData.summary)}
                   </ReactMarkdown>
@@ -173,18 +221,18 @@ const QuestionStats = ({ index, questionData, globalExpand }) => {
               )}
               {answerCount > 0 ? (
                 <div className={showOptions ? "" : "hidden"}>
-                  <ul className="comments-list">
+                  <div className="comments-grid">
                     {answerKeys.map((key, i) => {
                       const value = answers[key];
                       const displayValue = typeof value === "number" ? ` (${value}票)` : "";
                       return (
-                        <li key={i} className="comment-item">
+                        <div key={i} className="comment-item-grid">
                           <strong>选项 {i + 1}:</strong> {key}
                           {displayValue}
-                        </li>
+                        </div>
                       );
                     })}
-                  </ul>
+                  </div>
                 </div>
               ) : (
                 <div className={showOptions ? "" : "hidden"}>
@@ -226,10 +274,21 @@ const QuestionStats = ({ index, questionData, globalExpand }) => {
                 </BarChart>
               </ResponsiveContainer>
             </div>
+            {hasMoreData && (
+              <div style={{ 
+                textAlign: "center", 
+                fontSize: "12px", 
+                color: "#6b7280", 
+                marginBottom: "15px",
+                fontStyle: "italic"
+              }}>
+                * 图表显示前{MAX_BARS}项数据，另有{remainingCount}项数据未显示（合计{remainingSum}票）
+              </div>
+            )}
             <div>
               <div className="question-summary-box">
                 <h4>结果分析与总结</h4>
-                <div className="markdown-content">
+                <div className="markdown-content text-sm">
                   <ReactMarkdown components={MarkdownComponents}>
                     {fixMarkdownStrong(questionData.summary)}
                   </ReactMarkdown>
@@ -242,18 +301,21 @@ const QuestionStats = ({ index, questionData, globalExpand }) => {
               )}
               {answerCount > 0 ? (
                 <div className={showOptions ? "" : "hidden"}>
-                  <ul className="comments-list">
-                    {answerKeys.map((key, i) => {
+                  <div className="comments-grid">
+                    {(chartType === "bar" && answerKeys.length > 10 
+                      ? answerKeys.sort((a, b) => a.length - b.length) 
+                      : answerKeys
+                    ).map((key, i) => {
                       const value = answers[key];
                       const displayValue = typeof value === "number" ? ` (${value}票)` : "";
                       return (
-                        <li key={i} className="comment-item">
+                        <div key={i} className="comment-item-grid">
                           <strong>选项 {i + 1}:</strong> {key}
                           {displayValue}
-                        </li>
+                        </div>
                       );
                     })}
-                  </ul>
+                  </div>
                 </div>
               ) : (
                 <div className={showOptions ? "" : "hidden"}>
@@ -281,37 +343,37 @@ const InterviewRecord = ({ interview, index }) => {
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mb-8 border border-gray-200" id={`interview-${index}`}>
       <div className="border-b border-gray-200 pb-4 mb-6">
-        <h3 className="text-lg font-semibold mb-2 text-gray-800">
+        <h3 className="text-base font-semibold mb-2 text-gray-800">
           访谈记录 #{index + 1}: {consumer.name || "匿名"}
         </h3>
-        <div className="text-xs text-gray-600">{consumerInfo}</div>
+        <div className="text-xs text-gray-600" style={{ fontSize: "11px" }}>{consumerInfo}</div>
         {consumer.description && (
-          <div className="text-xs text-gray-600 mt-1 italic">{consumer.description}</div>
+          <div className="text-xs text-gray-600 mt-1 italic" style={{ fontSize: "11px" }}>{consumer.description}</div>
         )}
       </div>
-      <div className="mb-6">
-        <h4 className="font-medium mb-4 text-gray-700 text-sm">访谈内容 (中文)</h4>
+      <div className="mb-4">
+        <h4 className="font-medium mb-2 text-gray-700 text-xs">访谈内容 (中文)</h4>
         {interview.cn_data && interview.cn_data.length > 0 ? (
           interview.cn_data.map((chat, chatIndex) => (
             <div key={chatIndex} className="mb-4">
-              <div className="bg-blue-50 p-3 rounded-lg mb-2 shadow-sm text-sm" style={{ padding: "10px", letterSpacing: "1.5px" }}>
-                <span className="font-semibold text-blue-800" style={{ fontSize: "14px", paddingRight: "5px", fontWeight: "bold" }}>问:</span>
+              <div className="bg-blue-50 p-3 rounded-lg mb-2 shadow-sm text-xs" style={{ padding: "8px", letterSpacing: "1.5px", lineHeight: "1.3" }}>
+                <span className="font-semibold text-blue-800" style={{ fontSize: "12px", paddingRight: "5px", fontWeight: "bold" }}>问:</span>
                 <span className="text-gray-700 ml-1">{chat.q}</span>
               </div>
-              <div className="bg-green-50 p-3 rounded-lg ml-4 shadow-sm text-sm" style={{ padding: "10px", paddingTop: "5px", marginBottom: "5px" }}>
-                <span className="font-semibold text-green-800" style={{ fontSize: "14px", paddingRight: "5px", fontWeight: "bold" }}>答:</span>
+              <div className="bg-green-50 p-3 rounded-lg shadow-sm text-xs" style={{ padding: "8px", paddingTop: "5px", marginBottom: "5px", lineHeight: "1.3" }}>
+                <span className="font-semibold text-green-800" style={{ fontSize: "12px", paddingRight: "5px", fontWeight: "bold" }}>答:</span>
                 <span className="text-gray-700 ml-1">{chat.a}</span>
               </div>
             </div>
           ))
         ) : (
-          <p className="text-gray-500 italic text-sm">无中文访谈数据。</p>
+          <p className="text-gray-500 italic text-xs">无中文访谈数据。</p>
         )}
       </div>
       {interview.summary && (
-        <div className="mt-6">
-          <h4 className="font-medium mb-2 text-gray-700 text-sm">访谈总结</h4>
-          <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+        <div className="mt-4">
+          <h4 className="font-medium mb-2 text-gray-700 text-xs">访谈总结</h4>
+          <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 text-xs" style={{ lineHeight: "1.3" }}>
             <ReactMarkdown components={MarkdownComponents}>
               {fixMarkdownStrong(interview.summary)}
             </ReactMarkdown>
@@ -342,12 +404,15 @@ const SyntheticSurveyPageContainer = () => {
   .summary-box { background-color: #e8f4f1; border-left: 5px solid var(--primary-color); padding: 15px; margin-bottom: 30px; border-radius: 4px; }
   .question-summary-box { background-color: #fffbeb; border-left: 5px solid var(--secondary-color); padding: 15px; margin-top: 15px; margin-bottom: 15px; border-radius: 4px; }
   .question-summary-box h4 { color: #b45309; font-weight: bold; margin-bottom: 10px; }
-  .question-section { margin-bottom: 40px; padding: 20px; border: 1px solid var(--border-color); border-radius: 8px; background-color: white; break-inside: avoid; }
+  .question-section { margin-bottom: 40px; padding: 20px; border: 1px solid var(--border-color); border-radius: 8px; background-color: white; }
   .question-title { font-size: 1.3rem; color: var(--primary-color); margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); align-self: stretch; }
   .chart-container { position: relative; height: 300px; width: 100%; margin-bottom: 20px; }
   .comments-list { list-style-type: none; padding-left: 0; margin-top: 15px; }
   .comment-item { padding: 10px 15px; margin-bottom: 8px; background-color: #f8f9fa; border-left: 3px solid var(--secondary-color); border-radius: 4px; font-size: 0.95em; }
   .comment-item strong { color: var(--primary-color); }
+  .comments-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 8px; margin-top: 15px; }Add commentMore actions
+  .comment-item-grid { padding: 8px 12px; background-color: #f8f9fa; border-left: 3px solid var(--secondary-color); border-radius: 4px; font-size: 0.9em; word-break: break-word; }
+  .comment-item-grid strong { color: var(--primary-color); }
   .toggle-btn { background-color: var(--primary-color); color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; margin-top: 15px; margin-bottom: 10px; font-size: 0.9em; transition: background-color 0.2s; }
   .toggle-btn:hover { background-color: #2c5a4f; }
   .hidden { display: none; }
@@ -355,8 +420,8 @@ const SyntheticSurveyPageContainer = () => {
   .pie-chart-container { grid-column: span 1; display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
   .full-width-container { grid-column: 1 / -1 !important; width: 100%; }
   .full-width-container .chart-container { max-width: 100%; margin: 0 auto; }
-  @media (max-width: 768px) { .report-section { grid-template-columns: 1fr; } .pie-chart-container, .full-width-container { grid-column: 1 / -1; } }
-  @media print { body { padding: 0; margin: 0; } .container { box-shadow: none; border-radius: 0; padding: 10px; max-width: 100%; } h1 { font-size: 1.5rem; margin-bottom: 20px; padding-bottom: 10px; } .summary-box, .question-summary-box { margin-bottom: 20px; padding: 10px; } .question-section { border: 1px solid #ccc; margin-bottom: 20px; padding: 15px; } .question-title { font-size: 1.1rem; margin-bottom: 15px; padding-bottom: 8px; } .toggle-btn { display: none; } .hidden { display: block !important; } #interviewRecords { margin-top: 30px; } .chart-container { height: 250px; } script { display: none; } }`;
+  @media (max-width: 768px) { .report-section { grid-template-columns: 1fr; } .pie-chart-container, .full-width-container { grid-column: 1 / -1; } .comments-grid { grid-template-columns: 1fr; } }Add commentMore actions
+  @media print { body { padding: 0; margin: 0; } .container { box-shadow: none; border-radius: 0; padding: 10px; max-width: 100%; } h1 { font-size: 1.5rem; margin-bottom: 20px; padding-bottom: 10px; } .summary-box, .question-summary-box { margin-bottom: 20px; padding: 10px; break-inside: auto; page-break-inside: auto; } .question-section { border: 1px solid #ccc; margin-bottom: 20px; padding: 15px; break-inside: auto; page-break-inside: auto; } .question-title { font-size: 1.1rem; margin-bottom: 15px; padding-bottom: 8px; break-after: avoid; page-break-after: avoid; } .chart-container { height: 250px; break-inside: avoid; page-break-inside: avoid; } .markdown-content { break-inside: auto; page-break-inside: auto; } .comments-grid { break-inside: auto; page-break-inside: auto; } .comment-item-grid { break-inside: avoid; page-break-inside: avoid; } .toggle-btn { display: none; } .hidden { display: block !important; } #interviewRecords { margin-top: 30px; } script { display: none; } table { border-collapse: collapse !important; } td { border: none !important; } span { color-adjust: exact !important; -webkit-print-color-adjust: exact !important; } div { color-adjust: exact !important; -webkit-print-color-adjust: exact !important; } * { color-adjust: exact !important; -webkit-print-color-adjust: exact !important; } }`;
   return (
     <div>
       <style>{reportStyles}</style>
