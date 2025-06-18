@@ -281,36 +281,36 @@ const InterviewRecord = ({ interview, index }) => {
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mb-8 border border-gray-200" id={`interview-${index}`}>
       <div className="border-b border-gray-200 pb-4 mb-6">
-        <h3 className="text-xl font-semibold mb-2 text-gray-800">
+        <h3 className="text-lg font-semibold mb-2 text-gray-800">
           访谈记录 #{index + 1}: {consumer.name || "匿名"}
         </h3>
-        <div className="text-sm text-gray-600">{consumerInfo}</div>
+        <div className="text-xs text-gray-600">{consumerInfo}</div>
         {consumer.description && (
-          <div className="text-sm text-gray-600 mt-1 italic">{consumer.description}</div>
+          <div className="text-xs text-gray-600 mt-1 italic">{consumer.description}</div>
         )}
       </div>
       <div className="mb-6">
-        <h4 className="font-semibold mb-4 text-gray-700">访谈内容 (中文)</h4>
+        <h4 className="font-medium mb-4 text-gray-700 text-sm">访谈内容 (中文)</h4>
         {interview.cn_data && interview.cn_data.length > 0 ? (
           interview.cn_data.map((chat, chatIndex) => (
             <div key={chatIndex} className="mb-4">
-              <div className="bg-blue-50 p-3 rounded-lg mb-2 shadow-sm" style={{ padding: "10px", letterSpacing: "1.5px" }}>
-                <span className="font-semibold text-blue-800" style={{ fontSize: "16px", paddingRight: "5px", fontWeight: "bold" }}>问:</span>
+              <div className="bg-blue-50 p-3 rounded-lg mb-2 shadow-sm text-sm" style={{ padding: "10px", letterSpacing: "1.5px" }}>
+                <span className="font-semibold text-blue-800" style={{ fontSize: "14px", paddingRight: "5px", fontWeight: "bold" }}>问:</span>
                 <span className="text-gray-700 ml-1">{chat.q}</span>
               </div>
-              <div className="bg-green-50 p-3 rounded-lg ml-4 shadow-sm" style={{ padding: "10px", paddingTop: "5px", marginBottom: "5px" }}>
-                <span className="font-semibold text-green-800" style={{ fontSize: "16px", paddingRight: "5px", fontWeight: "bold" }}>答:</span>
+              <div className="bg-green-50 p-3 rounded-lg ml-4 shadow-sm text-sm" style={{ padding: "10px", paddingTop: "5px", marginBottom: "5px" }}>
+                <span className="font-semibold text-green-800" style={{ fontSize: "14px", paddingRight: "5px", fontWeight: "bold" }}>答:</span>
                 <span className="text-gray-700 ml-1">{chat.a}</span>
               </div>
             </div>
           ))
         ) : (
-          <p className="text-gray-500 italic">无中文访谈数据。</p>
+          <p className="text-gray-500 italic text-sm">无中文访谈数据。</p>
         )}
       </div>
       {interview.summary && (
         <div className="mt-6">
-          <h4 className="font-semibold mb-2 text-gray-700">访谈总结</h4>
+          <h4 className="font-medium mb-2 text-gray-700 text-sm">访谈总结</h4>
           <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
             <ReactMarkdown components={MarkdownComponents}>
               {fixMarkdownStrong(interview.summary)}
