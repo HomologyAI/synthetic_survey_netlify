@@ -9,7 +9,7 @@ import {
 import remarkGfm from "remark-gfm";
 import { FileText, BarChart2, MessageSquare, WandSparkles } from 'lucide-react';
 
-import response from "./data/None_1004_202507071546_suzhou_50000summary_gemini-2.5-pro-preview-05-06.json";
+import response from "./data/None_1004_202507071546_suzhou_50000summary_reextract1_gemini-2.5-pro-preview-05-06.json";
 
 
 // =================================================================================
