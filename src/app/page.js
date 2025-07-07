@@ -173,16 +173,47 @@ const QuestionStats = ({ questionData }) => {
     const answerCount = answerKeys.length;
     const hasSummary = summary && summary.trim() !== "";
 
-    if (question_type === 'open_ended') {
-        const analysis = useMemo(() => {
-            if (!answerKeys.length) return { themeData: [], rawAnswers: [] };
-            const keywords = simpleKeywordExtractor(answerKeys, 15);
-            return {
-                themeData: keywords.map(kw => ({ name: kw.text, value: kw.value })),
-                rawAnswers: Object.entries(answer || {}).map(([text, value]) => ({ text, value })),
-            };
-        }, [answer, answerKeys]);
+    // ================= FIX START: Moved all hooks to the top level =================
+    
+    // Hook for open-ended questions analysis. It runs on every render but only computes
+    // meaningful data if the question_type matches.
+    const analysis = useMemo(() => {
+        if (question_type !== 'open_ended' || !answerKeys.length) {
+            return { themeData: [], rawAnswers: [] };
+        }
+        const keywords = simpleKeywordExtractor(answerKeys, 15);
+        return {
+            themeData: keywords.map(kw => ({ name: kw.text, value: kw.value })),
+            rawAnswers: Object.entries(answer || {}).map(([text, value]) => ({ text, value })),
+        };
+    }, [question_type, answer, answerKeys]);
+    
+    // Hooks for multiple-choice/other questions. These are now always called.
+    const [showOptions, setShowOptions] = useState(false);
+
+    const { data: chartData, chartType } = useMemo(() => {
+        if (question_type === 'open_ended' || !answer || answerCount === 0) {
+            return { data: [], chartType: "bar" };
+        }
+        const data = Object.entries(answer).map(([label, value]) => ({
+            name: label,
+            value: typeof value === "number" ? value : 0,
+        })).sort((a, b) => b.value - a.value);
         
+        const type = data.length > 10 ? "bar" : "pie";
+        return { data, chartType: type };
+    }, [question_type, answer, answerCount]);
+
+    const total = useMemo(() => {
+        if (question_type === 'open_ended') return 0;
+        return chartData.reduce((sum, entry) => sum + (entry.value || 0), 0)
+    }, [chartData, question_type]);
+
+    // ================= FIX END ====================================================
+
+    // --- Conditional Rendering based on question_type ---
+
+    if (question_type === 'open_ended') {
         return (
             <div className="bg-white border border-gray-200/80 rounded-xl shadow-md p-6 flex flex-col lg:col-span-2">
               <h3 className="text-lg font-semibold text-blue-900 mb-4 pb-4 border-b border-gray-200">{question}</h3>
@@ -191,17 +222,8 @@ const QuestionStats = ({ questionData }) => {
         );
     }
     
-    const [showOptions, setShowOptions] = useState(false);
-    const { data: chartData, chartType } = useMemo(() => {
-        if (!answer || answerCount === 0) return { data: [], chartType: "bar" };
-        const data = Object.entries(answer).map(([label, value]) => ({
-            name: label,
-            value: typeof value === "number" ? value : 0,
-        })).sort((a, b) => b.value - a.value);
-        const type = data.length > 10 ? "bar" : "pie";
-        return { data, chartType: type };
-    }, [answer, answerCount]);
-    const total = useMemo(() => chartData.reduce((sum, entry) => sum + (entry.value || 0), 0), [chartData]);
+    // --- Render logic for non-open-ended questions ---
+    
     const isSideBySideLayout = chartType === 'pie';
     const toggleOptions = () => setShowOptions(!showOptions);
     const renderCompactLegend = (props) => {
