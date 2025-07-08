@@ -347,7 +347,7 @@ const InterviewRecord = ({ interview, index, isOpen, onToggle }) => {
         {/* --- 修正点 2: 为折叠容器添加 force-print-expand-interview 类 --- */}
         <div 
             className={`transition-all duration-500 ease-in-out overflow-hidden ${
-                isOpen ? 'max-h-[2000px] mt-6 pt-6 border-t border-gray-200' : 'max-h-0'
+                isOpen ? 'max-h-[9999px] mt-6 pt-6 border-t border-gray-200' : 'max-h-0'
             } force-print-expand-interview`}
         >
             <div>
@@ -396,6 +396,7 @@ const SyntheticSurveyPageContainer = () => {
     const [openStates, setOpenStates] = useState(
         interviews.reduce((acc, _, index) => ({ ...acc, [index]: false }), {})
     );
+    const [isPrintMode, setIsPrintMode] = useState(false);
 
     // --- 数据和事件处理函数 (保持不变) ---
     const processedStats = useMemo(() => {
@@ -421,66 +422,114 @@ const SyntheticSurveyPageContainer = () => {
   
     // --- 核心改动 1: 注入打印样式 ---
     const printStyles = `
-      @media print {
-        /* 强制打印颜色和背景 */
-        * {
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
+  /* --- 新增部分：用于在浏览器内模拟打印模式 --- */
+  /* 当这个 class 存在时，应用打印样式 */
+  .print-mode-active .no-print {
+    display: none !important;
+  }
+  .print-mode-active .printable-content-wrapper > section {
+    display: block !important;
+    margin-bottom: 2rem; /* 在屏幕上用 margin 代替分页符 */
+  }
+  .print-mode-active .force-print-expand {
+    max-height: none !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+  .print-mode-active .force-print-expand-interview {
+    max-height: 9999px !important;
+    overflow: visible !important;
+    margin-top: 1.5rem !important;
+    padding-top: 1.5rem !important;
+    border-top-width: 1px !important;
+  }
+  /* 在打印模式下，让背景变白，移除阴影 */
+  .print-mode-active.print-container {
+    background-color: #fff !important;
+    box-shadow: none !important;
+    border: 1px solid #ddd;
+  }
 
-        /* 隐藏交互元素 */
-        .no-print {
-          display: none !important;
-        }
-        
-        /* 页面和容器样式重置 */
-        body {
-          background-color: #fff !important;
-        }
-        .print-container {
-          max-width: 100% !important;
-          width: 100% !important;
-          margin: 0 !important;
-          padding: 10px !important;
-          box-shadow: none !important;
-        }
 
-        /* 强制显示所有 Tab 内容块 */
-        .printable-content-wrapper > section {
-          display: block !important;
-          page-break-before: always; /* 每个部分从新的一页开始 */
-        }
-        
-        /* 强制展开所有可滚动/折叠的区域 */
-        .force-print-expand {
-            max-height: none !important;
-            overflow: visible !important;
-            height: auto !important;
-        }
-        .force-print-expand-interview {
-            max-height: 9999px !important; /* 用一个超大值 */
-            overflow: visible !important;
-            margin-top: 1.5rem !important;
-            padding-top: 1.5rem !important;
-            border-top-width: 1px !important;
-        }
-      }
-    `;
+  /* --- 保留部分：用于真正的打印操作 (当用户按 Ctrl+P) --- */
+  @media print {
+    /* 强制打印颜色和背景 */
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    /* 隐藏交互元素 */
+    .no-print {
+      display: none !important;
+    }
+    
+    /* 页面和容器样式重置 */
+    body {
+      background-color: #fff !important;
+    }
+    .print-container {
+      max-width: 100% !important;
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 10px !important;
+      box-shadow: none !important;
+      border: none !important; /* 真正打印时不需要边框 */
+    }
+
+    /* 强制显示所有 Tab 内容块并分页 */
+    .printable-content-wrapper > section {
+      display: block !important;
+      page-break-before: always; /* 每个部分从新的一页开始 */
+    }
+    /* 第一个 section 前面不需要分页 */
+    .printable-content-wrapper > section:first-child {
+        page-break-before: auto;
+    }
+    
+    /* 强制展开所有可滚动/折叠的区域 */
+    .force-print-expand {
+        max-height: none !important;
+        overflow: visible !important;
+        height: auto !important;
+    }
+    .force-print-expand-interview {
+        max-height: 9999px !important; /* 用一个超大值 */
+        overflow: visible !important;
+        margin-top: 1.5rem !important;
+        padding-top: 1.5rem !important;
+        border-top-width: 1px !important;
+    }
+  }
+`;
 
     return (
         <div className="bg-gray-50/50 min-h-screen">
             <style>{printStyles}</style>
-            <div className="w-full max-w-[80vw] mx-auto px-4 sm:px-6 lg:px-8 py-8 print-container">
+            <div 
+                className={`
+                    w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 print-container
+                    transition-all duration-300
+                    ${isPrintMode ? 'max-w-full print-mode-active' : 'max-w-[80vw]'}
+                `}
+            >
                 
                 {/* --- 核心改动 2: 添加打印按钮 --- */}
                 <div className="flex justify-end mb-4 no-print">
-                    <button
-                        onClick={() => window.print()}
-                        className="bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-                        打印/导出 PDF
-                    </button>
+                  <button
+                      // 修改 onClick 行为：切换 isPrintMode 的状态
+                      onClick={() => setIsPrintMode(prev => !prev)}
+                      className="bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                  >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          {/* 可以根据模式切换图标，这里为了简单先用一个 */}
+                          <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                          <rect x="6" y="14" width="12" height="8"></rect>
+                      </svg>
+                      {/* 根据 isPrintMode 状态动态显示文本 */}
+                      {isPrintMode ? '返回阅读模式' : '进入打印预览'}
+                  </button>
                 </div>
                 
                 <h1 className="text-3xl sm:text-4xl font-bold text-center text-blue-900 mb-4">{surveyTopic ? `${surveyTopic} - 调查结果报告` : "调查结果报告"}</h1>
