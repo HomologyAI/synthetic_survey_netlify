@@ -347,7 +347,7 @@ const InterviewRecord = ({ interview, index, isOpen, onToggle }) => {
         {/* --- 修正点 2: 为折叠容器添加 force-print-expand-interview 类 --- */}
         <div 
             className={`transition-all duration-500 ease-in-out overflow-hidden ${
-                isOpen ? 'max-h-[9999px] mt-6 pt-6 border-t border-gray-200' : 'max-h-0'
+                isOpen ? 'max-h-max mt-6 pt-6 border-t border-gray-200' : 'max-h-0'
             } force-print-expand-interview`}
         >
             <div>
