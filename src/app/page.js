@@ -312,10 +312,35 @@ const QuestionStats = ({ questionData}) => {
     );
 };
 
-const InterviewRecord = ({ interview, index, isOpen, onToggle }) => {
+const Highlight = ({ text = '', highlight = '' }) => {
+    if (!highlight.trim()) {
+        return <span>{text}</span>;
+    }
+    const regex = new RegExp(`(${highlight})`, 'gi');
+    const parts = text.split(regex);
+    return (
+        <span>
+            {parts.map((part, i) =>
+                part.toLowerCase() === highlight.toLowerCase() ? (
+                    <mark key={i} className="bg-yellow-300 text-black px-1 rounded">
+                        {part}
+                    </mark>
+                ) : (
+                    part
+                )
+            )}
+        </span>
+    );
+};
+
+const InterviewRecord = ({ interview, index, isOpen, onToggle, searchQuery }) => {
     const consumer = interview.consumer;
     const consumerGender = consumer.gender === "male" ? "男" : consumer.gender === "female" ? "女" : "其他";
     const consumerInfo = `${consumer.age}岁 ${consumerGender} ${consumer.region}`;
+
+
+    const isSearchResult = searchQuery && searchQuery.trim().length > 0;
+    const shouldBeOpen = isOpen || isSearchResult;
 
     return (
       <div className="bg-white rounded-lg shadow p-6 mb-6 border border-gray-200/80 transition-shadow hover:shadow-md print:shadow-none print:border-gray-300" style={{ pageBreakInside: 'avoid' }}>
@@ -345,9 +370,10 @@ const InterviewRecord = ({ interview, index, isOpen, onToggle }) => {
 
 
         {/* --- 修正点 2: 为折叠容器添加 force-print-expand-interview 类 --- */}
+
         <div 
             className={`transition-all duration-500 ease-in-out overflow-hidden ${
-                isOpen ? 'max-h-max mt-6 pt-6 border-t border-gray-200' : 'max-h-0'
+                shouldBeOpen ? 'max-h-max mt-6 pt-6 border-t border-gray-200' : 'max-h-0'
             } force-print-expand-interview`}
         >
             <div>
@@ -359,11 +385,15 @@ const InterviewRecord = ({ interview, index, isOpen, onToggle }) => {
                           {/* --- 修正点 3: 为带背景色的元素添加 print:bg-* 类 --- */}
                           <div className="bg-blue-50 print:bg-blue-50 p-3 rounded-lg text-sm">
                             <span className="font-semibold text-blue-800 print:text-blue-800">问:</span>
-                            <span className="text-gray-800 print:text-gray-800 ml-2">{chat.q}</span>
+                            <span className="text-gray-800 print:text-gray-800 ml-2">
+                                <Highlight text={chat.q} highlight={searchQuery} />
+                            </span>
                           </div>
                           <div className="bg-gray-50 print:bg-gray-50 p-3 rounded-lg text-sm mt-2">
                             <span className="font-semibold text-gray-700 print:text-gray-700">答:</span>
-                            <span className="text-gray-800 print:text-gray-800 ml-2">{chat.a}</span>
+                            <span className="text-gray-800 print:text-gray-800 ml-2">
+                                <Highlight text={chat.a} highlight={searchQuery} />
+                            </span>
                           </div>
                         </div>
                     ))}
@@ -391,12 +421,31 @@ const SyntheticSurveyPageContainer = () => {
     const surveyTopic = response["raw_survey"]?.topic;
     const structuredQuestions = response["structured_questions"] || [];
     
-    // --- 状态逻辑 (保持不变) ---
+    // --- 状态逻辑 ---
     const [activeTab, setActiveTab] = useState("summary");
     const [openStates, setOpenStates] = useState(
         interviews.reduce((acc, _, index) => ({ ...acc, [index]: false }), {})
     );
     const [isPrintMode, setIsPrintMode] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
+
+    const filteredInterviews = useMemo(() => {
+        if (!searchQuery.trim()) {
+            return interviews; // 如果搜索框为空，返回所有访谈
+        }
+        const lowerCaseQuery = searchQuery.toLowerCase();
+        return interviews.filter(interview => {
+            // 检查 cn_data 是否存在且为数组
+            if (!interview.cn_data || !Array.isArray(interview.cn_data)) {
+                return false;
+            }
+            // 检查访谈的问答内容是否包含搜索词
+            return interview.cn_data.some(chat => 
+                (chat.q && chat.q.toLowerCase().includes(lowerCaseQuery)) ||
+                (chat.a && chat.a.toLowerCase().includes(lowerCaseQuery))
+            );
+        });
+    }, [interviews, searchQuery]);
 
     // --- 数据和事件处理函数 (保持不变) ---
     const processedStats = useMemo(() => {
@@ -420,16 +469,14 @@ const SyntheticSurveyPageContainer = () => {
     };
     const areAllInterviewsOpen = useMemo(() => Object.values(openStates).every(Boolean), [openStates]);
   
-    // --- 核心改动 1: 注入打印样式 ---
-    const printStyles = `
+const printStyles = `
   /* --- 新增部分：用于在浏览器内模拟打印模式 --- */
-  /* 当这个 class 存在时，应用打印样式 */
   .print-mode-active .no-print {
     display: none !important;
   }
   .print-mode-active .printable-content-wrapper > section {
     display: block !important;
-    margin-bottom: 2rem; /* 在屏幕上用 margin 代替分页符 */
+    margin-bottom: 2rem; 
   }
   .print-mode-active .force-print-expand {
     max-height: none !important;
@@ -443,28 +490,28 @@ const SyntheticSurveyPageContainer = () => {
     padding-top: 1.5rem !important;
     border-top-width: 1px !important;
   }
-  /* 在打印模式下，让背景变白，移除阴影 */
   .print-mode-active.print-container {
     background-color: #fff !important;
     box-shadow: none !important;
     border: 1px solid #ddd;
   }
+  
+  /* --- 新增规则：控制图表卡片的打印行为 --- */
+  .print-mode-active .question-stats-card {
+      break-inside: avoid;
+      page-break-inside: avoid; /* Older syntax for compatibility */
+  }
 
 
   /* --- 保留部分：用于真正的打印操作 (当用户按 Ctrl+P) --- */
   @media print {
-    /* 强制打印颜色和背景 */
     * {
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
     }
-
-    /* 隐藏交互元素 */
     .no-print {
       display: none !important;
     }
-    
-    /* 页面和容器样式重置 */
     body {
       background-color: #fff !important;
     }
@@ -474,28 +521,29 @@ const SyntheticSurveyPageContainer = () => {
       margin: 0 !important;
       padding: 10px !important;
       box-shadow: none !important;
-      border: none !important; /* 真正打印时不需要边框 */
+      border: none !important; 
     }
-
-    /* 强制显示所有 Tab 内容块并分页 */
     .printable-content-wrapper > section {
       display: block !important;
-      page-break-before: always; /* 每个部分从新的一页开始 */
+      page-break-before: always;
     }
-    /* 第一个 section 前面不需要分页 */
     .printable-content-wrapper > section:first-child {
         page-break-before: auto;
     }
+
+    /* --- 在这里也添加相同的规则 --- */
+    .question-stats-card {
+        break-inside: avoid;
+        page-break-inside: avoid; /* Older syntax for compatibility */
+    }
     
-    /* 强制展开所有可滚动/折叠的区域 */
-    .force-print-expand {
+    .force-print-expand,
+    .force-print-expand-interview {
         max-height: none !important;
         overflow: visible !important;
         height: auto !important;
     }
     .force-print-expand-interview {
-        max-height: 9999px !important; /* 用一个超大值 */
-        overflow: visible !important;
         margin-top: 1.5rem !important;
         padding-top: 1.5rem !important;
         border-top-width: 1px !important;
@@ -579,16 +627,50 @@ const SyntheticSurveyPageContainer = () => {
                     </section>
 
                     <section className={`${activeTab === 'interviews' ? 'block' : 'hidden'}`}>
-                        <div className="flex justify-between items-center mb-6 pb-2 border-b border-gray-300 no-print">
+                        <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6 pb-2 border-b border-gray-300 no-print">
                             <h2 className="text-2xl font-bold text-blue-800">访谈记录</h2>
-                            {interviews && interviews.length > 0 && (<button onClick={handleToggleAllInterviews} className="bg-white text-blue-600 border border-blue-300 hover:bg-blue-50 text-sm font-medium px-4 py-2 rounded-lg transition-colors">{areAllInterviewsOpen ? '一键收起所有' : '一键展开所有'}</button>)}
+                            
+                            {/* --- 新增的搜索框 --- */}
+                            <div className="relative w-full md:w-72">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" /></svg>
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="搜索访谈内容..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                />
+                            </div>
+
+                            {interviews && interviews.length > 0 && (
+                                <button onClick={handleToggleAllInterviews} className="bg-white text-blue-600 border border-blue-300 hover:bg-blue-50 text-sm font-medium px-4 py-2 rounded-lg transition-colors flex-shrink-0">
+                                    {areAllInterviewsOpen ? '一键收起所有' : '一键展开所有'}
+                                </button>
+                            )}
                         </div>
                         {/* 打印时也需要标题 */}
                         <h2 className="text-2xl font-bold text-blue-800 mb-6 pb-2 border-b border-gray-300 hidden print:block">访谈记录</h2>
                         <div className="space-y-6">
-                            {interviews && interviews.map((interview, index) => (
-                                <InterviewRecord key={interview.id || index} interview={interview} index={index} isOpen={openStates[index]} onToggle={() => handleToggleInterview(index)}/>
-                            ))}
+                          {filteredInterviews.length > 0 ? (
+                                  filteredInterviews.map((interview, index) => (
+                                      <InterviewRecord 
+                                          key={interview.id || index} 
+                                          interview={interview} 
+                                          index={index} 
+                                          isOpen={openStates[index]} 
+                                          onToggle={() => handleToggleInterview(index)}
+                                          // --- 新增 prop ---
+                                          searchQuery={searchQuery}
+                                      />
+                                  ))
+                              ) : (
+                                  // --- 新增：当没有搜索结果时显示 ---
+                                  <div className="text-center py-10">
+                                      <p className="text-gray-500">未找到与 “{searchQuery}” 相关的访谈记录。</p>
+                                  </div>
+                              )}
                         </div>
                     </section>
                 </div>
