@@ -111,8 +111,8 @@ const ReportTabs = ({ activeTab, onTabClick }) => {
     );
 };
 
-const OpenEndedAnalysisUI = ({ analysis, answerCount }) => {
-    const [showRaw, setShowRaw] = useState(false);
+const OpenEndedAnalysisUI = ({ analysis, answerCount, isPrintMode = false }) => {
+    const [showRaw, setShowRaw] = useState(isPrintMode);
     const topKeywords = analysis.themeData || [];
 
     return (
@@ -167,7 +167,7 @@ const OpenEndedAnalysisUI = ({ analysis, answerCount }) => {
     );
 };
 
-const QuestionStats = ({ questionData }) => {
+const QuestionStats = ({ questionData, isPrintMode = false }) => {
     const { question, summary, answer, question_type } = questionData;
     const answerKeys = Object.keys(answer || {});
     const answerCount = answerKeys.length;
@@ -189,7 +189,7 @@ const QuestionStats = ({ questionData }) => {
     }, [question_type, answer, answerKeys]);
     
     // Hooks for multiple-choice/other questions. These are now always called.
-    const [showOptions, setShowOptions] = useState(false);
+    const [showOptions, setShowOptions] = useState(isPrintMode);
 
     const { data: chartData, chartType } = useMemo(() => {
         if (question_type === 'open_ended' || !answer || answerCount === 0) {
@@ -209,15 +209,11 @@ const QuestionStats = ({ questionData }) => {
         return chartData.reduce((sum, entry) => sum + (entry.value || 0), 0)
     }, [chartData, question_type]);
 
-    // ================= FIX END ====================================================
-
-    // --- Conditional Rendering based on question_type ---
-
     if (question_type === 'open_ended') {
         return (
             <div className="bg-white border border-gray-200/80 rounded-xl shadow-md p-6 flex flex-col lg:col-span-2">
               <h3 className="text-lg font-semibold text-blue-900 mb-4 pb-4 border-b border-gray-200">{question}</h3>
-              <OpenEndedAnalysisUI analysis={analysis} answerCount={answerCount} /> 
+              <OpenEndedAnalysisUI analysis={analysis} answerCount={answerCount} isPrintMode={isPrintMode}/> 
             </div>
         );
     }
@@ -345,12 +341,22 @@ const InterviewRecord = ({ interview, index, isOpen, onToggle }) => {
 // =================================================================================
 
 const SyntheticSurveyPageContainer = () => {
+    // --- 数据获取逻辑 (保持不变) ---
     const data = response["results"];
     const interviews = response["interviewer_records"];
     const surveyTopic = response["raw_survey"]?.topic;
     const structuredQuestions = response["structured_questions"] || [];
-    const [activeTab, setActiveTab] = useState("summary");
+    
+    // --- 核心改动 1: 引入 isPrintMode 状态 ---
+    const [isPrintMode, setIsPrintMode] = useState(false);
 
+    // --- 其他状态 (保持不变) ---
+    const [activeTab, setActiveTab] = useState("summary");
+    const [openStates, setOpenStates] = useState(
+        interviews.reduce((acc, _, index) => ({ ...acc, [index]: false }), {})
+    );
+
+    // --- 数据和事件处理函数 (保持不变) ---
     const processedStats = useMemo(() => {
         if (!data.stats || !structuredQuestions.length) return data.stats || [];
         const questionTypeMap = new Map();
@@ -363,10 +369,6 @@ const SyntheticSurveyPageContainer = () => {
             question_type: questionTypeMap.get(stat.question) || 'multiple_choice'
         }));
     }, [data.stats, structuredQuestions]);
-
-    const [openStates, setOpenStates] = useState(
-        interviews.reduce((acc, _, index) => ({ ...acc, [index]: false }), {})
-    );
     const handleToggleInterview = (index) => setOpenStates(prev => ({ ...prev, [index]: !prev[index] }));
     const handleToggleAllInterviews = () => {
         const allAreOpen = Object.values(openStates).every(Boolean);
@@ -374,14 +376,98 @@ const SyntheticSurveyPageContainer = () => {
         for (const key in openStates) { newStates[key] = !allAreOpen; }
         setOpenStates(newStates);
     };
-    const areAllInterviewsOpen = Object.values(openStates).every(Boolean);
+    const areAllInterviewsOpen = useMemo(() => Object.values(openStates).every(Boolean), [openStates]);
   
+    // --- 核心改动 2: 用于打印的 CSS 样式 ---
+    const printStyles = `
+      @media print {
+        /* 在打印时，隐藏所有带 .no-print 类的元素 */
+        .no-print {
+          display: none !important;
+        }
+        /* 强制主容器宽度充满页面，并移除阴影和背景色 */
+        .print-container {
+          max-width: 100% !important;
+          margin: 0 !important;
+          padding: 10px !important;
+          box-shadow: none !important;
+          background-color: transparent !important;
+        }
+        body {
+            background-color: #fff !important;
+        }
+        /* 确保每个大的 section 从新的一页开始 */
+        .print-section-break {
+            page-break-before: always;
+        }
+        /* 尝试避免问题卡片被分页截断 */
+        .question-stats-card {
+            page-break-inside: avoid;
+        }
+      }
+    `;
+
     return (
         <div className="bg-gray-50/50 min-h-screen">
-            <div className="w-full max-w-[80vw] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <style>{printStyles}</style>
+            <div className="w-full max-w-[80vw] mx-auto px-4 sm:px-6 lg:px-8 py-8 print-container">
+                
+                {/* --- 核心改动 3: 打印模式切换按钮 --- */}
+                <div className="flex justify-end mb-4 no-print">
+                    <button
+                        onClick={() => {
+                            const newMode = !isPrintMode;
+                            setIsPrintMode(newMode);
+                            if (newMode) {
+                                // 切换到打印模式后，延迟触发打印，给页面渲染时间
+                                setTimeout(() => window.print(), 500);
+                            }
+                        }}
+                        className="bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                        {isPrintMode ? "返回交互模式" : "打印/导出 PDF"}
+                    </button>
+                </div>
+                
                 <h1 className="text-3xl sm:text-4xl font-bold text-center text-blue-900 mb-4">{surveyTopic ? `${surveyTopic} - 调查结果报告` : "调查结果报告"}</h1>
-                <p className="text-center text-gray-500 mb-8">一份全面的用户洞察与数据分析报告</p>
+                {!isPrintMode && <p className="text-center text-gray-500 mb-8">一份全面的用户洞察与数据分析报告</p>}
 
+                {/* --- 核心改动 4: 根据 isPrintMode 决定渲染结构 --- */}
+                {isPrintMode ? (
+                    // --- 打印模式：线性渲染所有内容 ---
+                    <div className="mt-12 space-y-12">
+                        <section>
+                            <h2 className="text-2xl font-bold text-blue-800 mb-6 pb-2 border-b border-gray-300">总体分析</h2>
+                            <div className="prose max-w-none"><ReactMarkdown components={MarkdownComponents}>{fixMarkdownStrong(data.total_summary || "*未提供总体总结。*")}</ReactMarkdown></div>
+                        </section>
+
+                        <section className="print-section-break">
+                            <h2 className="text-2xl font-bold text-blue-800 mb-6 pb-2 border-b border-gray-300">决策建议</h2>
+                            <div className="prose prose-lg max-w-none"><ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>{fixMarkdownStrong(data.suggestion) || "*暂无决策建议。*"}</ReactMarkdown></div>
+                        </section>
+
+                        <section className="print-section-break">
+                            <h2 className="text-2xl font-bold text-blue-800 mb-6 pb-2 border-b border-gray-300">详细统计</h2>
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                {/* 在打印模式下，QuestionStats 内部的状态不受影响，它会自己展开 */}
+                                {processedStats.map((stat, index) => ( <QuestionStats key={index} questionData={stat} isPrintMode={true}/> ))}
+                            </div>
+                        </section>
+
+                        <section className="print-section-break">
+                             <h2 className="text-2xl font-bold text-blue-800 mb-6 pb-2 border-b border-gray-300">访谈记录</h2>
+                             <div className="space-y-6">
+                                {interviews && interviews.map((interview, index) => (
+                                    // 打印时强制展开所有访谈
+                                    <InterviewRecord key={interview.id || index} interview={interview} index={index} isOpen={true} onToggle={() => {}}/>
+                                ))}
+                            </div>
+                        </section>
+                    </div>
+                ) : (
+                    // --- 交互模式：显示 Tabs ---
+                    <div>
                 <ReportTabs activeTab={activeTab} onTabClick={setActiveTab} />
 
                 <div className="mt-6">
@@ -409,6 +495,8 @@ const SyntheticSurveyPageContainer = () => {
                         </section>
                     )}
                 </div>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -423,3 +511,4 @@ export default function SyntheticSurveyPage() {
         <SyntheticSurveyPageContainer />
     );
 }
+
