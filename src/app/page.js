@@ -43,8 +43,8 @@ const PieTooltip = ({ active, payload, total }) => {
       const data = payload[0];
       const percentage = total > 0 ? ((data.value / total) * 100).toFixed(1) + "%" : "0%";
       return (
-        <div className="p-3 bg-white rounded-lg shadow-lg border border-gray-200 text-sm">
-          <p className="font-bold text-gray-800">{data.name}</p>
+        <div className="p-3 bg-white print:bg-white rounded-lg shadow-lg border border-gray-200 print:border-gray-200 text-sm">
+          <p className="font-bold text-gray-800 print:text-gray-800">{data.name}</p>
           <p className="text-blue-600">票数: <span className="font-semibold">{data.value}</span> ({percentage})</p>
         </div>
       );
@@ -56,9 +56,9 @@ const BarTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       const sourceData = payload[0].payload;
       return (
-        <div className="p-3 bg-white rounded-lg shadow-lg border border-gray-200 text-sm">
-          <p className="font-bold text-gray-800">{sourceData.name}</p>
-          <p className="text-blue-600">票数: <span className="font-semibold">{sourceData.value}</span></p>
+        <div className="p-3 bg-white rounded-lg shadow-lg border border-gray-200 print:border-gray-200 text-sm">
+          <p className="font-bold text-gray-800 print:text-gray-800">{sourceData.name}</p>
+          <p className="text-blue-600 print:text-blue-600">票数: <span className="font-semibold">{sourceData.value}</span></p>
         </div>
       );
     }
@@ -127,37 +127,37 @@ const OpenEndedAnalysisUI = ({ analysis, answerCount, isPrintMode = false }) => 
                             <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 12 }} />
                             <Tooltip content={<BarTooltip />} cursor={{ fill: 'rgba(0, 122, 255, 0.08)' }}/>
                             <Bar dataKey="value" radius={[0, 8, 8, 0]}>
-                                {analysis.themeData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                                {analysis.themeData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="print:!fill-current"/>)}
                             </Bar>
                         </BarChart>
                     </ResponsiveContainer>
                 </div>
                 <div className="w-full">
-                    <h4 className="font-semibold text-gray-700 mb-4 text-center">高频关键词洞察</h4>
-                    <div className="border border-gray-200 rounded-lg p-4 bg-gray-50/50 space-y-3 max-h-96 overflow-y-auto">
+                    <h4 className="font-semibold text-gray-700 print:text-gray-700 mb-4 text-center">高频关键词洞察</h4>
+                    <div className="border border-gray-200 rounded-lg p-4 bg-gray-50/50 print:bg-gray-50/50 space-y-3 max-h-96 overflow-y-auto">
                         {topKeywords.length > 0 ? (
                             topKeywords.map((keyword, index) => (
                                 <div key={index} className="flex items-center justify-between text-sm">
                                     <div className="flex items-center">
-                                        <span className="text-gray-400 font-medium w-6 text-center">{index + 1}.</span>
-                                        <span className="text-gray-800 font-medium">{keyword.name}</span>
+                                        <span className="text-gray-400 print:text-gray-400 font-medium w-6 text-center">{index + 1}.</span>
+                                        <span className="text-gray-800 print:text-gray-800 font-medium">{keyword.name}</span>
                                     </div>
-                                    <span className="text-white bg-blue-500 font-semibold text-xs px-2 py-0.5 rounded-full">
+                                    <span className="text-white bg-blue-500 print:bg-blue-500 font-semibold text-xs px-2 py-0.5 rounded-full">
                                         {keyword.value} 次
                                     </span>
                                 </div>
                             ))
-                        ) : (<p className="text-sm text-gray-400 italic text-center py-8">无有效关键词可供分析。</p>)}
+                        ) : (<p className="text-sm text-gray-400 print:text-gray-400 italic text-center py-8">无有效关键词可供分析。</p>)}
                     </div>
                 </div>
             </div>
             <div>
-                <button onClick={() => setShowRaw(!showRaw)} className="text-sm font-medium text-blue-600 hover:text-blue-800">
+                <button onClick={() => setShowRaw(!showRaw)} className="text-sm font-medium text-blue-600 print:text-blue-600 hover:text-blue-800">
                     {showRaw ? '隐藏' : `查看全部 ${answerCount} 条原始回答`}
                 </button>
                 {showRaw && (
-                    <div className="mt-4 p-4 border rounded-lg bg-gray-50 max-h-96 overflow-y-auto">
-                        <ul className="list-decimal list-inside text-sm text-gray-700 space-y-1">
+                  <div className="mt-4 p-4 border rounded-lg bg-gray-50 max-h-96 overflow-y-auto print:max-h-none print:overflow-visible print:border-none print:p-0 print:mt-2">
+                        <ul className="list-decimal list-inside text-sm text-gray-700 print:text-gray-700 space-y-1">
                             {analysis.rawAnswers.map((ans, i) => <li key={i}>{ans.text} ({ans.value}票)</li>)}
                         </ul>
                     </div>
@@ -253,8 +253,8 @@ const QuestionStats = ({ questionData, isPrintMode = false }) => {
     const dynamicBarSize = answerCount > 10 ? 20 : 35;
     
     return (
-        <div className="bg-white border border-gray-200/80 rounded-xl shadow-md p-6 flex flex-col lg:col-span-2">
-          <h3 className="text-lg font-semibold text-blue-900 mb-4 pb-4 border-b border-gray-200">{question}</h3>
+        <div className="bg-white print:bg-white border border-gray-200/80 print:border-gray-200/80 rounded-xl shadow-md p-6 flex flex-col lg:col-span-2">
+          <h3 className="text-lg font-semibold text-blue-900 mb-4 pb-4 border-b border-gray-200 print:border-gray-200">{question}</h3>
       <div
         className={`flex-grow ${
           isSideBySideLayout
@@ -270,7 +270,7 @@ const QuestionStats = ({ questionData, isPrintMode = false }) => {
                   {chartType === "pie" ? (
                     <PieChart>
                       <Pie data={chartData} cx="50%" cy="50%" innerRadius={45} outerRadius={80} paddingAngle={2} dataKey="value" nameKey="name" labelLine={false} label={renderCustomizedLabel}>
-                        {chartData.map((entry, index) => (<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} strokeWidth={0} />))}
+                        {chartData.map((entry, index) => (<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} style={{ fill: COLORS[index % COLORS.length] }} className="print:!fill-current" strokeWidth={0} />))}
                       </Pie>
                       <Tooltip content={<PieTooltip total={total} />} />
                       <Legend layout="vertical" align="right" verticalAlign="middle" wrapperStyle={{ right: -10 }} content={(props) => renderCompactLegend(props)} />
@@ -282,7 +282,7 @@ const QuestionStats = ({ questionData, isPrintMode = false }) => {
                       <YAxis axisLine={false} tickLine={false} domain={getSafeYAxisDomain()} tick={{ fontSize: 11, fill: '#6b7280' }} />
                       <Tooltip content={<BarTooltip />} cursor={{ fill: 'rgba(0, 122, 255, 0.08)' }} />
                       <Bar dataKey="value" barSize={dynamicBarSize} radius={[10, 10, 0, 0]}>
-                        {chartData.map((entry, index) => (<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />))}
+                        {chartData.map((entry, index) => (<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} style={{ fill: COLORS[index % COLORS.length] }} className="print:!fill-current" />))}
                       </Bar>
                     </BarChart>
                   )}
@@ -293,8 +293,10 @@ const QuestionStats = ({ questionData, isPrintMode = false }) => {
           className={`mt-4 md:mt-0 ${isSideBySideLayout ? "md:col-span-1" : ""}`}
         >
           <div className="flex flex-col justify-center h-full w-full ">
-              {hasSummary && (<div className="bg-blue-50/70 border-l-4 border-blue-400 p-4 rounded-r-md mb-4"><h4 className="font-bold text-blue-800 mb-2">结果分析与总结</h4><div className="prose prose-sm max-w-none prose-p:text-gray-700"><ReactMarkdown components={MarkdownComponents}>{fixMarkdownStrong(summary)}</ReactMarkdown></div></div>)}
-              {answerCount > 0 && (<div><button onClick={toggleOptions} className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1">{showOptions ? "隐藏详细数据" : `查看所有选项 (${answerCount}条)`}<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-200 ${showOptions ? 'rotate-180' : ''}`}><polyline points="6 9 12 15 18 9"></polyline></svg></button><div className={`transition-all duration-300 ease-in-out overflow-hidden ${showOptions ? 'max-h-96 mt-3' : 'max-h-0'}`}>{answerCount > 0 ? (<ul className="space-y-2 text-sm border-t pt-3 overflow-y-auto max-h-80 pr-2">{answerKeys.map((key, i) => (<li key={i} className="text-gray-700 bg-gray-50 p-2.5 rounded-md border-l-2 border-gray-300"><strong>选项 {i + 1}:</strong> {key}<span className="font-semibold text-blue-800 ml-1">{typeof answer[key] === "number" ? ` (${answer[key]}票)` : ""}</span></li>))}</ul>) : (<p className="text-gray-500 italic mt-2">无详细选项数据。</p>)}</div></div>)}
+              {hasSummary && (<div className="bg-blue-50/70 print:bg-blue-50/70 border-l-4 border-blue-400 print:border-blue-400 p-4 rounded-r-md mb-4"><h4 className="font-bold text-blue-800 print:text-blue-800 mb-2">结果分析与总结</h4><div className="prose prose-sm max-w-none prose-p:text-gray-700"><ReactMarkdown components={MarkdownComponents}>{fixMarkdownStrong(summary)}</ReactMarkdown></div></div>)}
+              {answerCount > 0 && (<div><button onClick={toggleOptions} className="text-sm font-medium text-blue-600 print:text-blue-600 hover:text-blue-800 flex items-center gap-1">{showOptions ? "隐藏详细数据" : `查看所有选项 (${answerCount}条)`}<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-200 ${showOptions ? 'rotate-180' : ''}`}><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+              <div className={`transition-all duration-300 ease-in-out overflow-hidden ${showOptions ? 'max-h-96 mt-3' : 'max-h-0'} print:max-h-none print:overflow-visible`}>
+                {answerCount > 0 ? (<ul className="space-y-2 text-sm border-t pt-3 overflow-y-auto max-h-80 pr-2 print:max-h-none print:overflow-visible">{answerKeys.map((key, i) => (<li key={i} className="text-gray-700 print:text-gray-700 bg-gray-50 print:bg-gray-50 p-2.5 rounded-md border-l-2 border-gray-300"><strong>选项 {i + 1}:</strong> {key}<span className="font-semibold text-blue-800 ml-1">{typeof answer[key] === "number" ? ` (${answer[key]}票)` : ""}</span></li>))}</ul>) : (<p className="text-gray-500 italic mt-2">无详细选项数据。</p>)}</div></div>)}
             </div>
             </div>
           </div>
@@ -318,11 +320,13 @@ const InterviewRecord = ({ interview, index, isOpen, onToggle }) => {
              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}><polyline points="6 9 12 15 18 9"></polyline></svg>
           </div>
         </div>
-        <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isOpen ? 'max-h-[2000px] mt-6 pt-6 border-t border-gray-200' : 'max-h-0'}`}>
+        <div className={`transition-all duration-500 ease-in-out overflow-hidden ${
+        isOpen ? 'max-h-[2000px] mt-6 pt-6 border-t ...' : 'max-h-0'
+    } print:max-h-none print:overflow-visible print:mt-6 print:pt-6 print:border-t`}>
             <div>
               <h4 className="font-semibold mb-3 text-gray-700 text-sm">访谈内容 (中文)</h4>
               {interview.cn_data && interview.cn_data.length > 0 ? (
-                <div className="space-y-4">{interview.cn_data.map((chat, chatIndex) => (<div key={chatIndex}><div className="bg-blue-50 p-3 rounded-lg text-sm"><span className="font-semibold text-blue-800">问:</span><span className="text-gray-800 ml-2">{chat.q}</span></div><div className="bg-gray-50 p-3 rounded-lg text-sm mt-2"><span className="font-semibold text-gray-700">答:</span><span className="text-gray-800 ml-2">{chat.a}</span></div></div>))}</div>
+                <div className="space-y-4">{interview.cn_data.map((chat, chatIndex) => (<div key={chatIndex}><div className="bg-blue-50 print:bg-blue-50 p-3 rounded-lg text-sm"><span className="font-semibold text-blue-800">问:</span><span className="text-gray-800 ml-2">{chat.q}</span></div><div className="bg-gray-50 p-3 rounded-lg text-sm mt-2"><span className="font-semibold text-gray-700">答:</span><span className="text-gray-800 ml-2">{chat.a}</span></div></div>))}</div>
               ) : (<p className="text-gray-500 italic text-sm">无中文访谈数据。</p>)}
             </div>
             {interview.summary && (
@@ -381,6 +385,10 @@ const SyntheticSurveyPageContainer = () => {
     // --- 核心改动 2: 用于打印的 CSS 样式 ---
     const printStyles = `
       @media print {
+        *, *::before, *::after {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
         /* 在打印时，隐藏所有带 .no-print 类的元素 */
         .no-print {
           display: none !important;
