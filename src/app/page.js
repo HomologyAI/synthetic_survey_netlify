@@ -88,77 +88,18 @@ const ReportTabs = ({ activeTab, onTabClick }) => {
     );
 };
 
-// OpenEndedAnalysisUI 组件的新实现
-const OpenEndedAnalysisUI = ({ analysis, answerCount }) => {
-    const { highImpact = [], detailed = [], general = [] } = analysis;
-    const [showGeneral, setShowGeneral] = useState(false); // 控制长尾声音的显示
-
+const OpenEndedSummaryUI = ({ summary }) => {
     return (
-        <div className="space-y-8">
-            {/* --- 第一层：高光时刻 --- */}
-            {highImpact.length > 0 && (
-                <div>
-                    <div className="flex items-center gap-3 mb-4">
-                        <svg className="h-6 w-6 text-yellow-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-                        <h4 className="font-semibold text-gray-800">热门反馈</h4>
-                    </div>
-                    <div className="space-y-3">
-                        {highImpact.map((ans, i) => (
-                            <div key={i} className="p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg shadow-sm">
-                                <p className="text-blue-900 font-medium">“{ans.text}”</p>
-                                <span className="text-sm font-bold text-blue-600 mt-2 block">{ans.value} 人提及</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* --- 第二层：深度见解 --- */}
-            {detailed.length > 0 && (
-                <div>
-                    <div className="space-y-4">
-                        {detailed.map((ans, i) => (
-                            <div key={i} className="pb-1 border-b border-gray-200/80 last:border-b-0">
-                                <p className="text-sm text-gray-700 leading-relaxed">{ans.text}</p>
-                                <p className="text-xs text-gray-500 mt-2 text-right">{ans.value} 票</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* --- 第三层：长尾声音 --- */}
-            {general.length > 0 && (
-                <div className="border-t pt-6">
-                    <button 
-                        onClick={() => setShowGeneral(!showGeneral)}
-                        // --- 1. 添加 no-print 类 ---
-                        className="text-sm font-medium text-gray-600 hover:text-black w-full text-left flex justify-between items-center no-print"
-                    >
-                        <span>查看其余 {general.length} 条简短反馈</span>
-                        <svg className={`h-5 w-5 transition-transform duration-200 ${showGeneral ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
-                    </button>
-                    
-                    {/* 打印时也需要一个静态标题 */}
-                    <h5 className="text-sm font-semibold text-gray-700 mb-4 hidden print:block">其余简短反馈:</h5>
-
-                    {/* --- 2. 修改这个 div --- */}
-                    <div 
-                        // 条件渲染依然保留，用于屏幕显示
-                        className={`
-                            transition-all duration-300 ease-in-out overflow-hidden
-                            ${showGeneral ? 'max-h-[500px] mt-4' : 'max-h-0'}
-                            force-print-block
-                        `}
-                    >
-                        <div className="p-4 bg-gray-50 print:bg-transparent print:p-0 rounded-lg max-h-80 print:max-h-none overflow-y-auto print:overflow-visible">
-                             <ul className="list-disc list-inside text-sm text-gray-600 space-y-2">
-                                {general.map((ans, i) => <li key={i}>{ans.text} <span className="text-gray-400">({ans.value}票)</span></li>)}
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            )}
+        <div className="bg-blue-50/70 border-l-4 border-blue-400 p-6 rounded-r-md print:bg-blue-50/70">
+            <div className="prose prose-sm max-w-none prose-p:text-gray-700">
+                {summary && summary.trim() !== "" ? (
+                    <ReactMarkdown components={MarkdownComponents}>
+                        {fixMarkdownStrong(summary)}
+                    </ReactMarkdown>
+                ) : (
+                    <p className="italic text-gray-500">此问题没有提供总结分析。</p>
+                )}
+            </div>
         </div>
     );
 };
@@ -229,12 +170,11 @@ const QuestionStats = ({ questionData}) => {
 
     
     if (question_type === 'open_ended') {
-        const answerCount = Object.keys(answer || {}).length;
         return (
             <div className="bg-white border border-gray-200/80 rounded-xl shadow-md p-6 flex flex-col lg:col-span-2 question-stats-card">
               <h3 className="text-lg font-semibold text-blue-900 mb-4 pb-4 border-b border-gray-200">{question}</h3>
-              {/* 传递分层后的数据 */}
-              <OpenEndedAnalysisUI analysis={analysis} answerCount={answerCount} /> 
+              {/* --- 直接调用新的、简洁的UI组件 --- */}
+              <OpenEndedSummaryUI summary={summary} /> 
             </div>
         );
     }
