@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo} from "react";
+import { useState, useMemo, useEffect,useCallback, memo} from "react";
 import ReactMarkdown from "react-markdown";
 import MarkdownComponents from "../../demo/MarkdownComponents";
 import {
@@ -17,6 +17,284 @@ function fixMarkdownStrong(text) {
   if (typeof text !== 'string') return text;
   return text.replace(/(\*\*.*?\*\*)(?=[^\s\n])/g, "$1 ");
 }
+
+// --- Add this new component to your file ---
+
+const BackToTopButton = () => {
+    // State to track whether the button should be visible
+    const [isVisible, setIsVisible] = useState(false);
+
+    // Function to scroll the window to the top smoothly
+    const scrollToTop = () => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth' // for a smooth scrolling effect
+        });
+    };
+
+    // Effect to add and remove the scroll event listener
+    useEffect(() => {
+        // Function to check scroll position
+        const toggleVisibility = () => {
+            // Show button if user has scrolled down more than 300px
+            if (window.pageYOffset > 300) {
+                setIsVisible(true);
+            } else {
+                setIsVisible(false);
+            }
+        };
+
+        // Add the listener when the component mounts
+        window.addEventListener('scroll', toggleVisibility);
+
+        // Cleanup: remove the listener when the component unmounts
+        return () => {
+            window.removeEventListener('scroll', toggleVisibility);
+        };
+    }, []); // Empty dependency array ensures this effect runs only once
+
+    return (
+        <div className="fixed bottom-8 right-8 z-50 no-print">
+            {isVisible && (
+                <button
+                    onClick={scrollToTop}
+                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-3 shadow-lg transition-opacity duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+                    aria-label="Go to top"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                    >
+                        <path d="M12 19V5M5 12l7-7 7 7" />
+                    </svg>
+                </button>
+            )}
+        </div>
+    );
+};
+
+
+const InterviewsTab = memo(({
+    interviews,
+    openStates,
+    handleToggleInterview,
+    handleToggleAllInterviews,
+    areAllInterviewsOpen
+}) => {
+    // 1. All state related to searching now lives inside this component.
+    const [inputValue, setInputValue] = useState('');
+    const [searchQuery, setSearchQuery] = useState(''); // This is the debounced value
+    const [matches, setMatches] = useState([]);
+    const [currentMatchIndex, setCurrentMatchIndex] = useState(-1);
+
+    // 2. Debounce effect: Updates the real search query after the user stops typing.
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setSearchQuery(inputValue);
+        }, 300); // 300ms delay
+
+        return () => {
+            clearTimeout(timer);
+        };
+    }, [inputValue]);
+
+    // 3. Effect to find all matches when the debounced search query changes.
+    useEffect(() => {
+        if (!searchQuery.trim()) {
+            setMatches([]);
+            setCurrentMatchIndex(-1);
+            return;
+        }
+
+        const lowerCaseQuery = searchQuery.toLowerCase();
+        const allMatches = [];
+
+        interviews.forEach((interview, interviewIndex) => {
+            if (interview.cn_data && Array.isArray(interview.cn_data)) {
+                interview.cn_data.forEach((chat, chatIndex) => {
+                    if (chat.q && chat.q.toLowerCase().includes(lowerCaseQuery)) {
+                        allMatches.push({ interviewIndex, chatIndex, part: 'q', id: `match-${interviewIndex}-${chatIndex}-q` });
+                    }
+                    if (chat.a && chat.a.toLowerCase().includes(lowerCaseQuery)) {
+                        allMatches.push({ interviewIndex, chatIndex, part: 'a', id: `match-${interviewIndex}-${chatIndex}-a` });
+                    }
+                });
+            }
+        });
+
+        setMatches(allMatches);
+        setCurrentMatchIndex(allMatches.length > 0 ? 0 : -1);
+    }, [searchQuery, interviews]);
+
+    // 4. Effect to scroll to the currently active match.
+    useEffect(() => {
+        if (currentMatchIndex === -1 || matches.length === 0) return;
+
+        const currentMatch = matches[currentMatchIndex];
+        const element = document.getElementById(currentMatch.id);
+
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, [currentMatchIndex, matches]);
+    
+    // 5. Handlers for search navigation.
+    const handleNextMatch = useCallback(() => {
+        if (matches.length > 0) {
+            setCurrentMatchIndex(prev => (prev + 1) % matches.length);
+        }
+    }, [matches.length]);
+
+    const handlePrevMatch = useCallback(() => {
+        if (matches.length > 0) {
+            setCurrentMatchIndex(prev => (prev - 1 + matches.length) % matches.length);
+        }
+    }, [matches.length]);
+
+    const handleSearchKeyDown = useCallback((e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (e.shiftKey) {
+                handlePrevMatch();
+            } else {
+                handleNextMatch();
+            }
+        }
+    }, [handlePrevMatch, handleNextMatch]);
+
+    // 6. Memoized data for rendering.
+    const searchedInterviewIndices = useMemo(() => {
+        if (!searchQuery.trim()) return new Set();
+        return new Set(matches.map(m => m.interviewIndex));
+    }, [searchQuery, matches]);
+
+    const filteredInterviews = useMemo(() => {
+        if (!searchQuery.trim()) {
+            return interviews.map((interview, index) => ({ interview, originalIndex: index }));
+        }
+
+        const lowerCaseQuery = searchQuery.toLowerCase();
+        const results = [];
+
+        interviews.forEach((interview, index) => {
+            if (interview.cn_data && interview.cn_data.some(chat =>
+                (chat.q && chat.q.toLowerCase().includes(lowerCaseQuery)) ||
+                (chat.a && chat.a.toLowerCase().includes(lowerCaseQuery))
+            )) {
+                results.push({ interview, originalIndex: index });
+            }
+        });
+
+        return results;
+    }, [interviews, searchQuery]);
+
+    // 7. The JSX for this tab.
+    return (
+        <>
+            <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6 pb-2 border-b border-gray-300 no-print">
+                <h2 className="text-2xl font-bold text-blue-800">访谈记录</h2>
+
+                <div className="relative w-full md:w-auto md:flex-grow">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" /></svg>
+                    </div>
+                    <input
+                        type="text"
+                        placeholder="搜索访谈内容 (回车切换)"
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        onKeyDown={handleSearchKeyDown}
+                        className="block w-full pl-10 pr-32 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    />
+                    {inputValue && (
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 space-x-1">
+                            <button
+                                type="button"
+                                onClick={() => setInputValue('')}
+                                className="p-1 text-gray-500 hover:text-gray-800 rounded-full hover:bg-gray-100 focus:outline-none"
+                                aria-label="Clear search"
+                            >
+                                <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                            </button>
+
+                            {matches.length > 0 && (
+                                <>
+                                    <span className="text-sm text-gray-500 border-l pl-2 ml-1">
+                                        {currentMatchIndex + 1} / {matches.length}
+                                    </span>
+                                    <button onClick={handlePrevMatch} className="p-1 text-gray-600 hover:bg-gray-200 rounded-full" aria-label="Previous match"><svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7" /></svg></button>
+                                    <button onClick={handleNextMatch} className="p-1 text-gray-600 hover:bg-gray-200 rounded-full" aria-label="Next match"><svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg></button>
+                                </>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                {interviews && interviews.length > 0 && (
+                    <button onClick={handleToggleAllInterviews} className="bg-white text-blue-600 border border-blue-300 hover:bg-blue-50 text-sm font-medium px-4 py-2 rounded-lg transition-colors flex-shrink-0">
+                        {areAllInterviewsOpen ? '一键收起所有' : '一键展开所有'}
+                    </button>
+                )}
+            </div>
+
+            <h2 className="text-2xl font-bold text-blue-800 mb-6 pb-2 border-b border-gray-300 hidden print:block">访谈记录</h2>
+
+            <div className="space-y-6">
+                {filteredInterviews.map(({ interview, originalIndex }) => {
+                    // Find the ID of the current match, if any
+                    const currentMatchId = (currentMatchIndex !== -1 && matches[currentMatchIndex]) ? matches[currentMatchIndex].id : null;
+                    
+                    return (
+                        <InterviewRecord
+                            key={interview.id || originalIndex}
+                            interview={interview}
+                            index={originalIndex}
+                            isOpen={openStates[originalIndex] || searchedInterviewIndices.has(originalIndex)}
+                            onToggle={() => handleToggleInterview(originalIndex)}
+                            searchQuery={searchQuery}
+                            allMatches={matches}
+                            currentMatchIndex={currentMatchIndex}
+                            // Pass the current match ID down for precise highlighting
+                            currentMatchId={currentMatchId}
+                        />
+                    );
+                })}
+
+                {searchQuery && filteredInterviews.length === 0 && (
+                    <div className="text-center py-10">
+                        <p className="text-gray-500">未找到与 “{inputValue}” 相关的访谈记录。</p>
+                    </div>
+                )}
+            </div>
+        </>
+    );
+});
+
+InterviewsTab.displayName = 'InterviewsTab';
+
+const StatsTab = memo(({ processedStats }) => {
+  return (
+    <>
+      <h2 className="text-2xl font-bold text-blue-800 mb-6 pb-2 border-b border-gray-300">详细统计</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {processedStats.map((stat, index) => (
+          <QuestionStats key={index} questionData={stat} />
+        ))}
+      </div>
+    </>
+  );
+});
+StatsTab.displayName = 'StatsTab';
 
 const PieTooltip = ({ active, payload, total }) => {
     if (active && payload && payload.length) {
@@ -279,43 +557,59 @@ const QuestionStats = ({ questionData}) => {
     );
 };
 
-const Highlight = ({ text = '', highlight = '' }) => {
-    if (!highlight.trim()) {
+const Highlight = ({ text = '', highlight = '', elementId, isCurrent }) => {
+    if (!highlight.trim() || !text) {
         return <span>{text}</span>;
     }
-    const regex = new RegExp(`(${highlight})`, 'gi');
-    const parts = text.split(regex);
-    return (
-        <span>
-            {parts.map((part, i) =>
-                part.toLowerCase() === highlight.toLowerCase() ? (
-                    <mark key={i} className="bg-yellow-300 text-black px-1 rounded">
-                        {part}
-                    </mark>
-                ) : (
-                    part
-                )
-            )}
-        </span>
-    );
+    
+    try {
+        const regex = new RegExp(`(${highlight.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi');
+        const parts = text.split(regex);
+
+        return (
+            <span>
+                {parts.filter(Boolean).map((part, i) => {
+                    if (part.toLowerCase() === highlight.toLowerCase()) {
+                        return (
+                            <mark 
+                                key={i} 
+                                id={isCurrent ? elementId : undefined}
+                                className={`transition-colors duration-300 rounded px-1 ${
+                                    isCurrent ? 'bg-orange-400 text-white' : 'bg-yellow-300 text-black'
+                                }`}
+                            >
+                                {part}
+                            </mark>
+                        );
+                    }
+                    return part;
+                })}
+            </span>
+        );
+    } catch (e) {
+        console.error("Invalid regex in Highlight component", e);
+        return <span>{text}</span>;
+    }
 };
 
-const InterviewRecord = ({ interview, index, isOpen, onToggle, searchQuery }) => {
+const InterviewRecord = memo(({
+    interview,
+    index,
+    isOpen,
+    onToggle,
+    searchQuery,
+    currentMatchId // <-- This prop is passed from InterviewsTab
+}) => {
     const consumer = interview.consumer;
     const consumerGender = consumer.gender === "male" ? "男" : consumer.gender === "female" ? "女" : "其他";
     const consumerInfo = `${consumer.age}岁 ${consumerGender} ${consumer.region}`;
-
-
-    const isSearchResult = searchQuery && searchQuery.trim().length > 0;
-    const shouldBeOpen = isOpen || isSearchResult;
+    const shouldBeOpen = isOpen;
 
     return (
       <div 
         className="bg-white rounded-lg shadow p-6 mb-6 border border-gray-200/80 transition-shadow hover:shadow-md print:shadow-none print:border-gray-300 interview-avoid-break">
-        <div 
-            className="flex justify-between items-center cursor-pointer no-print"
-            onClick={onToggle} 
-        >
+        
+        <div className="flex justify-between items-center cursor-pointer no-print" onClick={onToggle}>
           <div>
             <h3 className="text-base font-semibold text-gray-800">访谈记录 #{index + 1}: {consumer.name || "匿名"}</h3>
             <div className="text-xs text-gray-500 mt-1">{consumerInfo}</div>
@@ -329,15 +623,11 @@ const InterviewRecord = ({ interview, index, isOpen, onToggle, searchQuery }) =>
           </div>
         </div>
         
-        {/* --- 新增: 专门用于打印的头部，没有点击事件 --- */}
         <div className="hidden print:block border-b border-gray-200 pb-4 mb-4">
             <h3 className="text-base font-semibold text-gray-800">访谈记录 #{index + 1}: {consumer.name || "匿名"}</h3>
             <div className="text-xs text-gray-500 mt-1">{consumerInfo}</div>
             {consumer.description && (<div className="text-xs text-gray-500 mt-1 italic">{consumer.description}</div>)}
         </div>
-
-
-        {/* --- 修正点 2: 为折叠容器添加 force-print-expand-interview 类 --- */}
 
         <div 
             className={`transition-all duration-500 ease-in-out overflow-hidden ${
@@ -346,27 +636,37 @@ const InterviewRecord = ({ interview, index, isOpen, onToggle, searchQuery }) =>
         >
             <div>
               <h4 className="font-semibold mb-3 text-gray-700 text-sm">访谈内容 (中文)</h4>
-              {interview.cn_data && interview.cn_data.length > 0 ? (
-                <div className="space-y-4">
-                    {interview.cn_data.map((chat, chatIndex) => (
-                        <div key={chatIndex}>
-                          {/* --- 修正点 3: 为带背景色的元素添加 print:bg-* 类 --- */}
-                          <div className="bg-blue-50 print:bg-blue-50 p-3 rounded-lg text-sm">
-                            <span className="font-semibold text-blue-800 print:text-blue-800">问:</span>
-                            <span className="text-gray-800 print:text-gray-800 ml-2">
-                                <Highlight text={chat.q} highlight={searchQuery} />
-                            </span>
-                          </div>
-                          <div className="bg-gray-50 print:bg-gray-50 p-3 rounded-lg text-sm mt-2">
-                            <span className="font-semibold text-gray-700 print:text-gray-700">答:</span>
-                            <span className="text-gray-800 print:text-gray-800 ml-2">
-                                <Highlight text={chat.a} highlight={searchQuery} />
-                            </span>
-                          </div>
-                        </div>
-                    ))}
-                </div>
-              ) : (<p className="text-gray-500 italic text-sm">无中文访谈数据。</p>)}
+              {interview.cn_data.map((chat, chatIndex) => {
+                const q_id = `match-${index}-${chatIndex}-q`;
+                const a_id = `match-${index}-${chatIndex}-a`;
+
+                return (
+                    <div key={chatIndex} className="mb-4">
+                      <div className="bg-blue-50 print:bg-blue-50 p-3 rounded-lg text-sm">
+                        <span className="font-semibold text-blue-800 print:text-blue-800">问:</span>
+                        <span className="text-gray-800 print:text-gray-800 ml-2">
+                            <Highlight
+                                text={chat.q}
+                                highlight={searchQuery}
+                                elementId={q_id}
+                                isCurrent={q_id === currentMatchId}
+                            />
+                        </span>
+                      </div>
+                      <div className="bg-gray-50 print:bg-gray-50 p-3 rounded-lg text-sm mt-2">
+                        <span className="font-semibold text-gray-700 print:text-gray-700">答:</span>
+                        <span className="text-gray-800 print:text-gray-800 ml-2">
+                            <Highlight
+                                text={chat.a}
+                                highlight={searchQuery}
+                                elementId={a_id}
+                                isCurrent={a_id === currentMatchId}
+                            />
+                        </span>
+                      </div>
+                    </div>
+                );
+              })}
             </div>
             
             {interview.summary && (
@@ -380,7 +680,8 @@ const InterviewRecord = ({ interview, index, isOpen, onToggle, searchQuery }) =>
         </div>
       </div>
     );
-};
+});
+InterviewRecord.displayName = 'InterviewRecord';
 
 const SyntheticSurveyPageContainer = () => {
     // --- 数据获取逻辑 (保持不变) ---
@@ -395,25 +696,7 @@ const SyntheticSurveyPageContainer = () => {
         interviews.reduce((acc, _, index) => ({ ...acc, [index]: false }), {})
     );
     const [isPrintMode, setIsPrintMode] = useState(false);
-    const [searchQuery, setSearchQuery] = useState("");
 
-    const filteredInterviews = useMemo(() => {
-        if (!searchQuery.trim()) {
-            return interviews; // 如果搜索框为空，返回所有访谈
-        }
-        const lowerCaseQuery = searchQuery.toLowerCase();
-        return interviews.filter(interview => {
-            // 检查 cn_data 是否存在且为数组
-            if (!interview.cn_data || !Array.isArray(interview.cn_data)) {
-                return false;
-            }
-            // 检查访谈的问答内容是否包含搜索词
-            return interview.cn_data.some(chat => 
-                (chat.q && chat.q.toLowerCase().includes(lowerCaseQuery)) ||
-                (chat.a && chat.a.toLowerCase().includes(lowerCaseQuery))
-            );
-        });
-    }, [interviews, searchQuery]);
 
     // --- 数据和事件处理函数 (保持不变) ---
     const processedStats = useMemo(() => {
@@ -428,7 +711,9 @@ const SyntheticSurveyPageContainer = () => {
             question_type: questionTypeMap.get(stat.question) || 'multiple_choice'
         }));
     }, [data.stats, structuredQuestions]);
-    const handleToggleInterview = (index) => setOpenStates(prev => ({ ...prev, [index]: !prev[index] }));
+    const handleToggleInterview = useCallback((index) => {
+        setOpenStates(prev => ({ ...prev, [index]: !prev[index] }));
+    }, []); 
     const handleToggleAllInterviews = () => {
         const allAreOpen = Object.values(openStates).every(Boolean);
         const newStates = {};
@@ -580,60 +865,25 @@ const printStyles = `
 
                     <section className={`${activeTab === 'stats' ? 'block' : 'hidden'}`}>
                         <h2 className="text-2xl font-bold text-blue-800 mb-6 pb-2 border-b border-gray-300">详细统计</h2>
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            {processedStats.map((stat, index) => ( <QuestionStats key={index} questionData={stat} /> ))}
-                        </div>
+                        
+                        {activeTab === 'stats' && <StatsTab processedStats={processedStats} />}
                     </section>
 
                     <section className={`${activeTab === 'interviews' ? 'block' : 'hidden'}`}>
-                        <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6 pb-2 border-b border-gray-300 no-print">
-                            <h2 className="text-2xl font-bold text-blue-800">访谈记录</h2>
-                            
-                            {/* --- 新增的搜索框 --- */}
-                            <div className="relative w-full md:w-72">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" /></svg>
-                                </div>
-                                <input
-                                    type="text"
-                                    placeholder="搜索访谈内容..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                />
-                            </div>
-
-                            {interviews && interviews.length > 0 && (
-                                <button onClick={handleToggleAllInterviews} className="bg-white text-blue-600 border border-blue-300 hover:bg-blue-50 text-sm font-medium px-4 py-2 rounded-lg transition-colors flex-shrink-0">
-                                    {areAllInterviewsOpen ? '一键收起所有' : '一键展开所有'}
-                                </button>
-                            )}
-                        </div>
-                        {/* 打印时也需要标题 */}
-                        <h2 className="text-2xl font-bold text-blue-800 mb-6 pb-2 border-b border-gray-300 hidden print:block">访谈记录</h2>
-                        <div className="space-y-6">
-                          {filteredInterviews.length > 0 ? (
-                                  filteredInterviews.map((interview, index) => (
-                                      <InterviewRecord 
-                                          key={interview.id || index} 
-                                          interview={interview} 
-                                          index={index} 
-                                          isOpen={openStates[index]} 
-                                          onToggle={() => handleToggleInterview(index)}
-                                          // --- 新增 prop ---
-                                          searchQuery={searchQuery}
-                                      />
-                                  ))
-                              ) : (
-                                  // --- 新增：当没有搜索结果时显示 ---
-                                  <div className="text-center py-10">
-                                      <p className="text-gray-500">未找到与 “{searchQuery}” 相关的访谈记录。</p>
-                                  </div>
-                              )}
-                        </div>
+                        {/* Only render the InterviewsTab if the tab is active */}
+                        {activeTab === 'interviews' && (
+                            <InterviewsTab
+                                interviews={interviews}
+                                openStates={openStates}
+                                handleToggleInterview={handleToggleInterview}
+                                handleToggleAllInterviews={handleToggleAllInterviews}
+                                areAllInterviewsOpen={areAllInterviewsOpen}
+                            />
+                        )}
                     </section>
                 </div>
             </div>
+            <BackToTopButton />
         </div>
     );
 };
