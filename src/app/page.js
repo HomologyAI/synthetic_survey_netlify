@@ -18,21 +18,6 @@ function fixMarkdownStrong(text) {
   return text.replace(/(\*\*.*?\*\*)(?=[^\s\n])/g, "$1 ");
 }
 
-function simpleKeywordExtractor(answers, topN = 15) {
-    const wordCounts = {};
-    const stopWords = new Set(['的', '了', '是', '我', '你', '他', '也', '都', '在', '个', '和', '与', '为', '这个', '那个', '一个', '我们', '什么', '不是', '就是']);
-    const words = answers.join(' ').match(/[\u4e00-\u9fa5]{2,}|[a-zA-Z]{3,}/g) || [];
-    words.forEach(word => {
-        if (!stopWords.has(word) && word.length > 1) {
-            wordCounts[word] = (wordCounts[word] || 0) + 1;
-        }
-    });
-    return Object.entries(wordCounts)
-        .sort(([, a], [, b]) => b - a)
-        .slice(0, topN)
-        .map(([text, value]) => ({ text, value }));
-}
-
 const PieTooltip = ({ active, payload, total }) => {
     if (active && payload && payload.length) {
       const data = payload[0];
@@ -103,69 +88,64 @@ const ReportTabs = ({ activeTab, onTabClick }) => {
     );
 };
 
+// OpenEndedAnalysisUI 组件的新实现
 const OpenEndedAnalysisUI = ({ analysis, answerCount }) => {
-    // 这个组件现在不需要知道打印模式，因为所有控制都通过 CSS 完成
-    const [showRaw, setShowRaw] = useState(false);
-    const topKeywords = analysis.themeData || [];
+    const { highImpact = [], detailed = [], general = [] } = analysis;
+    const [showGeneral, setShowGeneral] = useState(false); // 控制长尾声音的显示
 
     return (
         <div className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                {/* 左侧：主题柱状图 */}
-                <div className="w-full h-96">
-                    <h4 className="font-semibold text-gray-700 mb-4 text-center">核心主题提及频率</h4>
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={analysis.themeData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                            <XAxis type="number" />
-                            <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 12 }} />
-                            <Tooltip content={<BarTooltip />} cursor={{ fill: 'rgba(0, 122, 255, 0.08)' }}/>
-                            <Bar dataKey="value" radius={[0, 8, 8, 0]}>
-                                {analysis.themeData.map((entry, index) => 
-                                    // --- 修正点 1: 添加内联 style ---
-                                    <Cell 
-                                        key={`cell-${index}`} 
-                                        fill={COLORS[index % COLORS.length]} 
-                                        style={{ fill: COLORS[index % COLORS.length] }} 
-                                    />
-                                )}
-                            </Bar>
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-                {/* 右侧：高频关键词洞察 */}
-                <div className="w-full">
-                    <h4 className="font-semibold text-gray-700 mb-4 text-center">高频关键词洞察</h4>
-                    {/* --- 修正点 2: 添加 force-print-expand 类 --- */}
-                    <div className="border border-gray-200 rounded-lg p-4 bg-gray-50/50 space-y-3 max-h-96 overflow-y-auto force-print-expand">
-                        {topKeywords.length > 0 ? (
-                            topKeywords.map((keyword, index) => (
-                                <div key={index} className="flex items-center justify-between text-sm">
-                                    <div className="flex items-center">
-                                        <span className="text-gray-400 font-medium w-6 text-center">{index + 1}.</span>
-                                        <span className="text-gray-800 font-medium">{keyword.name}</span>
-                                    </div>
-                                    <span className="text-white bg-blue-500 font-semibold text-xs px-2 py-0.5 rounded-full print:bg-blue-500">
-                                        {keyword.value} 次
-                                    </span>
-                                </div>
-                            ))
-                        ) : (<p className="text-sm text-gray-400 italic text-center py-8">无有效关键词可供分析。</p>)}
+            {/* --- 第一层：高光时刻 --- */}
+            {highImpact.length > 0 && (
+                <div>
+                    <div className="flex items-center gap-3 mb-4">
+                        <svg className="h-6 w-6 text-yellow-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                        <h4 className="font-semibold text-gray-800">热门反馈</h4>
+                    </div>
+                    <div className="space-y-3">
+                        {highImpact.map((ans, i) => (
+                            <div key={i} className="p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg shadow-sm">
+                                <p className="text-blue-900 font-medium">“{ans.text}”</p>
+                                <span className="text-sm font-bold text-blue-600 mt-2 block">{ans.value} 人提及</span>
+                            </div>
+                        ))}
                     </div>
                 </div>
-            </div>
-            {/* 原始数据折叠区 */}
-            <div>
-                <button onClick={() => setShowRaw(!showRaw)} className="text-sm font-medium text-blue-600 hover:text-blue-800 no-print">
-                    {showRaw ? '隐藏' : `查看全部 ${answerCount} 条原始回答`}
-                </button>
-                {/* --- 修正点 3: 添加 force-print-expand 类 --- */}
-                <div className={`mt-4 p-4 border rounded-lg bg-gray-50 max-h-96 overflow-y-auto ${!showRaw && 'hidden'} force-print-expand`}>
-                    <ul className="list-decimal list-inside text-sm text-gray-700 space-y-1">
-                        {analysis.rawAnswers.map((ans, i) => <li key={i}>{ans.text} ({ans.value}票)</li>)}
-                    </ul>
+            )}
+
+            {/* --- 第二层：深度见解 --- */}
+            {detailed.length > 0 && (
+                <div>
+                    <div className="space-y-4">
+                        {detailed.map((ans, i) => (
+                            <div key={i} className="pb-1 border-b border-gray-200/80 last:border-b-0">
+                                <p className="text-sm text-gray-700 leading-relaxed">{ans.text}</p>
+                                <p className="text-xs text-gray-500 mt-2 text-right">{ans.value} 票</p>
+                            </div>
+                        ))}
+                    </div>
                 </div>
-            </div>
+            )}
+
+            {/* --- 第三层：长尾声音 --- */}
+            {general.length > 0 && (
+                <div className="border-t pt-6">
+                    <button 
+                        onClick={() => setShowGeneral(!showGeneral)}
+                        className="text-sm font-medium text-gray-600 hover:text-black w-full text-left flex justify-between items-center"
+                    >
+                        <span>查看其余 {general.length} 条简短反馈</span>
+                        <svg className={`h-5 w-5 transition-transform duration-200 ${showGeneral ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                    {showGeneral && (
+                        <div className="mt-4 p-4 bg-gray-50 rounded-lg max-h-80 overflow-y-auto">
+                             <ul className="list-disc list-inside text-sm text-gray-600 space-y-2">
+                                {general.map((ans, i) => <li key={i}>{ans.text} <span className="text-gray-400">({ans.value}票)</span></li>)}
+                            </ul>
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 };
@@ -177,16 +157,42 @@ const QuestionStats = ({ questionData}) => {
     const hasSummary = summary && summary.trim() !== "";
     
     const analysis = useMemo(() => {
-        if (question_type !== 'open_ended' || !answerKeys.length) {
-            return { themeData: [], rawAnswers: [] };
+        if (question_type !== 'open_ended' || !answer) {
+            return { highImpact: [], detailed: [], general: [] };
         }
-        const keywords = simpleKeywordExtractor(answerKeys, 15);
-        return {
-            themeData: keywords.map(kw => ({ name: kw.text, value: kw.value })),
-            rawAnswers: Object.entries(answer || {}).map(([text, value]) => ({ text, value })),
-        };
-    }, [question_type, answer, answerKeys]);
-    
+
+        // --- 核心的分层逻辑 ---
+        
+        // 1. 定义分层阈值
+        const VOTE_THRESHOLD = 3; // 票数大于等于3的为高光
+        const LENGTH_THRESHOLD = 100; // 长度大于等于20字符的为深度见解
+
+        const allAnswers = Object.entries(answer).map(([text, value]) => ({ text, value }));
+
+        const highImpact = [];
+        const detailed = [];
+        const general = [];
+
+        // 2. 将每个回答分配到对应的层级
+        for (const ans of allAnswers) {
+            if (ans.value >= VOTE_THRESHOLD) {
+                highImpact.push(ans);
+            } else if (ans.text.length >= LENGTH_THRESHOLD) {
+                detailed.push(ans);
+            } else {
+                general.push(ans);
+            }
+        }
+
+        // 3. 对每个层级内部进行排序，确保最重要的在最前面
+        highImpact.sort((a, b) => b.value - a.value);
+        detailed.sort((a, b) => b.value - a.value || b.text.length - a.text.length);
+        general.sort((a, b) => b.value - a.value);
+
+        return { highImpact, detailed, general };
+        
+    }, [question_type, answer]);
+
     // Hooks for multiple-choice/other questions. These are now always called.
     const [showOptions, setShowOptions] = useState(false);
 
@@ -208,15 +214,18 @@ const QuestionStats = ({ questionData}) => {
         return chartData.reduce((sum, entry) => sum + (entry.value || 0), 0)
     }, [chartData, question_type]);
 
+    
     if (question_type === 'open_ended') {
+        const answerCount = Object.keys(answer || {}).length;
         return (
             <div className="bg-white border border-gray-200/80 rounded-xl shadow-md p-6 flex flex-col lg:col-span-2 question-stats-card">
               <h3 className="text-lg font-semibold text-blue-900 mb-4 pb-4 border-b border-gray-200">{question}</h3>
+              {/* 传递分层后的数据 */}
               <OpenEndedAnalysisUI analysis={analysis} answerCount={answerCount} /> 
             </div>
         );
     }
-    
+
     // --- Render logic for non-open-ended questions ---
     const isSideBySideLayout = chartType === 'pie';
     const toggleOptions = () => setShowOptions(!showOptions);
