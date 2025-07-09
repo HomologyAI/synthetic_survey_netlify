@@ -273,7 +273,11 @@ const QuestionStats = ({ questionData}) => {
     const dynamicBarSize = answerCount > 10 ? 20 : 35;
     
         return (
-        <div className="bg-white border border-gray-200/80 rounded-xl shadow-md p-6 flex flex-col lg:col-span-2 question-stats-card">
+        <div 
+          className={`
+              bg-white border border-gray-200/80 rounded-xl shadow-md p-6 flex flex-col lg:col-span-2 question-stats-card 
+              ${chartType === 'pie' ? 'printable-avoid-break' : ''}
+          `}>
           <h3 className="text-lg font-semibold text-blue-900 mb-4 pb-4 border-b border-gray-200">{question}</h3>
           <div
             className={`flex-grow ${
@@ -284,7 +288,8 @@ const QuestionStats = ({ questionData}) => {
           >
             {chartData.length > 0 && (
               <div
-                className={`h-96 ${isSideBySideLayout ? "md:col-span-1" : "w-full"}`}
+                className={`h-96 ${isSideBySideLayout ? "md:col-span-1" : "w-full"} 
+                ${chartType === 'bar' ? 'printable-avoid-break' : ''}`}
               >
                 <ResponsiveContainer width="100%" height="100%">
                   {chartType === "pie" ? (
@@ -365,7 +370,8 @@ const InterviewRecord = ({ interview, index, isOpen, onToggle, searchQuery }) =>
     const shouldBeOpen = isOpen || isSearchResult;
 
     return (
-      <div className="bg-white rounded-lg shadow p-6 mb-6 border border-gray-200/80 transition-shadow hover:shadow-md print:shadow-none print:border-gray-300" style={{ pageBreakInside: 'avoid' }}>
+      <div 
+        className="bg-white rounded-lg shadow p-6 mb-6 border border-gray-200/80 transition-shadow hover:shadow-md print:shadow-none print:border-gray-300 interview-avoid-break">
         <div 
             className="flex justify-between items-center cursor-pointer no-print"
             onClick={onToggle} 
@@ -492,43 +498,27 @@ const SyntheticSurveyPageContainer = () => {
     const areAllInterviewsOpen = useMemo(() => Object.values(openStates).every(Boolean), [openStates]);
   
 const printStyles = `
-  /* --- 新增部分：用于在浏览器内模拟打印模式 --- */
+  /* --- 模拟打印模式的样式 --- */
   .print-mode-active .no-print {
     display: none !important;
   }
+  
+  /* --- 修改这里：所有section都可见，并且我们给它们之间加一点间距用于视觉区分 --- */
   .print-mode-active .printable-content-wrapper > section {
     display: block !important;
-    margin-bottom: 2rem; 
+    padding-top: 2rem; /* 在预览模式下，用一点间距来区分章节 */
   }
-  .print-mode-active .force-print-block {
-    display: block !important;
-    max-height: none !important; /* 移除高度限制 */
-    margin-top: 1rem !important; /* 保持间距 */
-    overflow: visible !important;
+  .print-mode-active .printable-content-wrapper > section:first-child {
+      padding-top: 0; /* 第一个章节不需要上边距 */
   }
-  .print-mode-active .force-print-expand {
-    max-height: none !important;
-    overflow: visible !important;
-    height: auto !important;
-  }
-  .print-mode-active .force-print-expand-interview {
-    max-height: 9999px !important;
-    overflow: visible !important;
-    margin-top: 1.5rem !important;
-    padding-top: 1.5rem !important;
-    border-top-width: 1px !important;
-  }
-  .print-mode-active.print-container {
-    background-color: #fff !important;
-    box-shadow: none !important;
-    border: 1px solid #ddd;
-  }
-  
-  /* --- 新增规则：控制图表卡片的打印行为 --- */
-  .print-mode-active .question-stats-card {
+
+  /* ...其他 .print-mode-active 规则... */
+  .print-mode-active .printable-avoid-break,
+  .print-mode-active .interview-avoid-break { /* 把访谈记录的规则也合并进来 */
       break-inside: avoid;
-      page-break-inside: avoid; /* Older syntax for compatibility */
+      page-break-inside: avoid;
   }
+
 
 
   /* --- 保留部分：用于真正的打印操作 (当用户按 Ctrl+P) --- */
@@ -558,16 +548,12 @@ const printStyles = `
     }
     .printable-content-wrapper > section {
       display: block !important;
-      page-break-before: always;
-    }
-    .printable-content-wrapper > section:first-child {
-        page-break-before: auto;
     }
 
-    /* --- 在这里也添加相同的规则 --- */
-    .question-stats-card {
+    .printable-avoid-break,
+    .interview-avoid-break { /* 把访谈记录的规则也合并进来 */
         break-inside: avoid;
-        page-break-inside: avoid; /* Older syntax for compatibility */
+        page-break-inside: avoid;
     }
     
     .force-print-expand,
