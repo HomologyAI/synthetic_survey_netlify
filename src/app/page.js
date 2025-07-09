@@ -132,18 +132,31 @@ const OpenEndedAnalysisUI = ({ analysis, answerCount }) => {
                 <div className="border-t pt-6">
                     <button 
                         onClick={() => setShowGeneral(!showGeneral)}
-                        className="text-sm font-medium text-gray-600 hover:text-black w-full text-left flex justify-between items-center"
+                        // --- 1. 添加 no-print 类 ---
+                        className="text-sm font-medium text-gray-600 hover:text-black w-full text-left flex justify-between items-center no-print"
                     >
                         <span>查看其余 {general.length} 条简短反馈</span>
                         <svg className={`h-5 w-5 transition-transform duration-200 ${showGeneral ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
                     </button>
-                    {showGeneral && (
-                        <div className="mt-4 p-4 bg-gray-50 rounded-lg max-h-80 overflow-y-auto">
+                    
+                    {/* 打印时也需要一个静态标题 */}
+                    <h5 className="text-sm font-semibold text-gray-700 mb-4 hidden print:block">其余简短反馈:</h5>
+
+                    {/* --- 2. 修改这个 div --- */}
+                    <div 
+                        // 条件渲染依然保留，用于屏幕显示
+                        className={`
+                            transition-all duration-300 ease-in-out overflow-hidden
+                            ${showGeneral ? 'max-h-[500px] mt-4' : 'max-h-0'}
+                            force-print-block
+                        `}
+                    >
+                        <div className="p-4 bg-gray-50 print:bg-transparent print:p-0 rounded-lg max-h-80 print:max-h-none overflow-y-auto print:overflow-visible">
                              <ul className="list-disc list-inside text-sm text-gray-600 space-y-2">
                                 {general.map((ans, i) => <li key={i}>{ans.text} <span className="text-gray-400">({ans.value}票)</span></li>)}
                             </ul>
                         </div>
-                    )}
+                    </div>
                 </div>
             )}
         </div>
@@ -487,6 +500,12 @@ const printStyles = `
     display: block !important;
     margin-bottom: 2rem; 
   }
+  .print-mode-active .force-print-block {
+    display: block !important;
+    max-height: none !important; /* 移除高度限制 */
+    margin-top: 1rem !important; /* 保持间距 */
+    overflow: visible !important;
+  }
   .print-mode-active .force-print-expand {
     max-height: none !important;
     overflow: visible !important;
@@ -523,6 +542,11 @@ const printStyles = `
     }
     body {
       background-color: #fff !important;
+    }
+    .force-print-block {
+        display: block !important;
+        max-height: none !important;
+        overflow: visible !important;
     }
     .print-container {
       max-width: 100% !important;
