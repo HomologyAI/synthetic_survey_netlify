@@ -599,7 +599,7 @@ const InterviewRecord = memo(({
 
     return (
       <div 
-        className="bg-white rounded-lg shadow p-6 mb-6 border border-gray-200/80 transition-shadow hover:shadow-md print:shadow-none print:border-gray-300 interview-avoid-break">
+        className="bg-white rounded-lg shadow p-6 mb-6 border border-gray-200/80 transition-shadow hover:shadow-md print:shadow-none print:border-gray-300">
         
         <div className="flex justify-between items-center cursor-pointer no-print" onClick={onToggle}>
           <div>
@@ -858,11 +858,11 @@ const printStyles = `
                         </div>
                     </section>
 
-                    <section className={`${(isPrintMode || activeTab === 'stats') ? 'block' : 'hidden'} print-break-before`}>
+                    <section className={`${(isPrintMode || activeTab === 'stats') ? 'block' : 'hidden'}`}>
                         <StatsTab processedStats={processedStats} />
                     </section>
 
-                    <section className={`${(isPrintMode || activeTab === 'interviews') ? 'block' : 'hidden'} print-break-before`}>
+                    <section className={`${(isPrintMode || activeTab === 'interviews') ? 'block' : 'hidden'}`}>
                         <div className="no-print">
                             <InterviewsTab
                                 interviews={interviews}
