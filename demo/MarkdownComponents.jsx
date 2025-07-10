@@ -52,6 +52,33 @@ const MarkdownComponents = {
       </blockquote>
     );
   },
+
+  // --- 新增的表格渲染组件 ---
+  table({ children }) {
+    return (
+      <div className="overflow-x-auto my-4">
+        <table className="w-full border-collapse border border-gray-300">
+          {children}
+        </table>
+      </div>
+    );
+  },
+  thead({ children }) {
+    return <thead className="bg-gray-100">{children}</thead>;
+  },
+  tbody({ children }) {
+    return <tbody>{children}</tbody>;
+  },
+  tr({ children }) {
+    return <tr className="border-b border-gray-200 hover:bg-gray-50">{children}</tr>;
+  },
+  th({ children }) {
+    return <th className="p-3 border-r border-gray-300 text-left font-semibold">{children}</th>;
+  },
+  td({ children }) {
+    return <td className="p-3 border-r border-gray-300 last:border-r-0">{children}</td>;
+  },
+  // --- 已有的代码 ---
   h1({ children }) {
     return <h1 className="text-2xl font-bold mb-2">{children}</h1>;
   },

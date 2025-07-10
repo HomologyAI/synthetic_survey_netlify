@@ -7,15 +7,36 @@ import {
   BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from "recharts";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from 'rehype-raw'; 
 import { FileText, BarChart2, MessageSquare, WandSparkles } from 'lucide-react';
-import response from "./data/None_1004_202507071546_suzhou_50000summary_reextract1_gemini-2.5-pro-preview-05-06.json";
+import response from "./data/None_1004_202507071546_suzhou_v2_newprompt_50000summary_gemini-2.5-pro-preview-05-06.json";
 
 
 const COLORS = ["#0032A0", "#007AFF", "#58A6FF", "#ADC8E6", "#A8DADC", "#457b9d", "#1d3557", "#8ECAE6"];
 
+/**
+ * 修复不规范的 Markdown 加粗语法。
+ * GFM (GitHub Flavored Markdown) 要求 `**` 标记和内容之间不能有空格。
+ * 此函数会找到例如 "** text **" 或 "** text" 的模式，并将其修正为 "**text**"。
+ * 
+ * @param {string} text - 输入的 Markdown 字符串。
+ * @returns {string} - 修复了加粗语法后的字符串。
+ */
 function fixMarkdownStrong(text) {
   if (typeof text !== 'string') return text;
-  return text.replace(/(\*\*.*?\*\*)(?=[^\s\n])/g, "$1 ");
+
+  // 使用正则表达式查找所有 `**` 包裹的、内部可能含有前后空格的文本
+  // \*\*       - 匹配开头的 "**"
+  // \s*        - 匹配0个或多个空格（处理 "** text" 的情况）
+  // (.*?)      - 非贪婪地捕获中间的所有字符（这是我们的核心内容）
+  // \s*        - 匹配0个或多个空格（处理 "text **" 的情况）
+  // \*\*       - 匹配结尾的 "**"
+  // 'g' 标志   - 全局匹配，修复字符串中所有的实例
+  const regex = /\*\*\s*(.*?)\s*\*\*/g;
+
+  // 使用 "$1" 来引用第一个捕获组（即核心内容），
+  // 然后用规范的 "**" 将其重新包裹。
+  return text.replace(regex, '**$1**');
 }
 
 // --- Add this new component to your file ---
@@ -363,7 +384,12 @@ const OpenEndedSummaryUI = ({ summary }) => {
         <div className="bg-blue-50/70 border-l-4 border-blue-400 p-6 rounded-r-md print:bg-blue-50/70">
             <div className="prose prose-sm max-w-none prose-p:text-gray-700">
                 {summary && summary.trim() !== "" ? (
-                    <ReactMarkdown components={MarkdownComponents}>
+                    <ReactMarkdown 
+                        // remark 插件用于处理 Markdown 语法
+                        remarkPlugins={[remarkGfm]}
+                        // 2. rehype 插件用于处理 HTML 语法
+                        rehypePlugins={[rehypeRaw]} 
+                        components={MarkdownComponents}>
                         {fixMarkdownStrong(summary)}
                     </ReactMarkdown>
                 ) : (
@@ -532,7 +558,7 @@ const QuestionStats = ({ questionData}) => {
           className={`mt-4 md:mt-0 ${isSideBySideLayout ? "md:col-span-1" : ""}`}
         >
           <div className="flex flex-col justify-center h-full w-full ">
-              {hasSummary && (<div className="bg-blue-50/70 border-l-4 border-blue-400 p-4 rounded-r-md mb-4 print:bg-blue-50/70"><h4 className="font-bold text-blue-800 mb-2">结果分析与总结</h4><div className="prose prose-sm max-w-none prose-p:text-gray-700"><ReactMarkdown components={MarkdownComponents}>{fixMarkdownStrong(summary)}</ReactMarkdown></div></div>)}
+              {hasSummary && (<div className="bg-blue-50/70 border-l-4 border-blue-400 p-4 rounded-r-md mb-4 print:bg-blue-50/70"><h4 className="font-bold text-blue-800 mb-2">结果分析与总结</h4><div className="prose prose-sm max-w-none prose-p:text-gray-700"><ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={MarkdownComponents}>{fixMarkdownStrong(summary)}</ReactMarkdown></div></div>)}
               {answerCount > 0 && (<div>
                 <button onClick={toggleOptions} className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1 no-print">
                   {showOptions ? "隐藏详细数据" : `查看所有选项 (${answerCount}条)`}
@@ -665,7 +691,7 @@ const InterviewRecord = memo(({
               <div className="mt-6">
                 <h4 className="font-semibold mb-2 text-gray-700 text-sm">访谈总结</h4>
                 <div className="bg-yellow-50/80 print:bg-yellow-50/80 p-4 rounded-lg border border-yellow-200/80 text-sm text-yellow-900 prose prose-sm max-w-none">
-                    <ReactMarkdown components={MarkdownComponents}>{fixMarkdownStrong(interview.summary)}</ReactMarkdown>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={MarkdownComponents}>{fixMarkdownStrong(interview.summary)}</ReactMarkdown>
                 </div>
               </div>
             )}
@@ -839,7 +865,7 @@ const printStyles = `
                                 </div>
                                 <hr className="my-6 border-gray-200" />
                                 <div className="prose prose-blue max-w-none prose-h2:text-blue-800 prose-h2:font-semibold prose-strong:text-gray-800">
-                                    <ReactMarkdown components={MarkdownComponents}>{fixMarkdownStrong(data.total_summary || "*未提供总体总结。*")}</ReactMarkdown>
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={MarkdownComponents}>{fixMarkdownStrong(data.total_summary || "*未提供总体总结。*")}</ReactMarkdown>
                                 </div>
                             </div>
                         </div>
@@ -853,7 +879,7 @@ const printStyles = `
                             </div>
                             <hr className="my-6 border-gray-200" />
                             <div className="prose prose-lg max-w-none prose-h3:text-gray-700 prose-li:my-1">
-                                <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>{fixMarkdownStrong(data.suggestion) || "*暂无决策建议。*"}</ReactMarkdown>
+                                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={MarkdownComponents}>{fixMarkdownStrong(data.suggestion) || "*暂无决策建议。*"}</ReactMarkdown>
                             </div>
                         </div>
                     </section>
