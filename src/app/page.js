@@ -872,24 +872,6 @@ const printStyles = `
                                 areAllInterviewsOpen={areAllInterviewsOpen}
                             />
                         </div>
-
-                        {/* B. 专门用于打印的部分 */}
-                        <div className={`${isPrintMode ? 'block' : 'hidden'} print:block`}>
-                            <h2 className="text-2xl font-bold text-blue-800 mb-6 pb-2 border-b border-gray-300">访谈记录</h2>
-                            <div className="space-y-6">
-                                {interviews.map((interview, originalIndex) => (
-                                    <InterviewRecord
-                                        key={`print-version-${interview.id || originalIndex}`}
-                                        interview={interview}
-                                        index={originalIndex}
-                                        isOpen={true} // 打印时强制展开
-                                        onToggle={() => {}}
-                                        searchQuery={""} // 无高亮
-                                        currentMatchId={null}
-                                    />
-                                ))}
-                            </div>
-                        </div>
                     </section>
                 </div>
             </div>
