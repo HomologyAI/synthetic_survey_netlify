@@ -246,30 +246,22 @@ const InterviewsTab = memo(({
                     </button>
                 )}
             </div>
-
-            <h2 className="text-2xl font-bold text-blue-800 mb-6 pb-2 border-b border-gray-300 hidden print:block">访谈记录</h2>
-
+             {/* 只渲染一个列表，用于屏幕交互 */}
             <div className="space-y-6">
                 {filteredInterviews.map(({ interview, originalIndex }) => {
-                    // Find the ID of the current match, if any
                     const currentMatchId = (currentMatchIndex !== -1 && matches[currentMatchIndex]) ? matches[currentMatchIndex].id : null;
-                    
                     return (
                         <InterviewRecord
-                            key={interview.id || originalIndex}
+                            key={`screen-${interview.id || originalIndex}`}
                             interview={interview}
                             index={originalIndex}
                             isOpen={openStates[originalIndex] || searchedInterviewIndices.has(originalIndex)}
                             onToggle={() => handleToggleInterview(originalIndex)}
                             searchQuery={searchQuery}
-                            allMatches={matches}
-                            currentMatchIndex={currentMatchIndex}
-                            // Pass the current match ID down for precise highlighting
                             currentMatchId={currentMatchId}
                         />
                     );
                 })}
-
                 {searchQuery && filteredInterviews.length === 0 && (
                     <div className="text-center py-10">
                         <p className="text-gray-500">未找到与 “{inputValue}” 相关的访谈记录。</p>
@@ -607,7 +599,7 @@ const InterviewRecord = memo(({
 
     return (
       <div 
-        className="bg-white rounded-lg shadow p-6 mb-6 border border-gray-200/80 transition-shadow hover:shadow-md print:shadow-none print:border-gray-300 interview-avoid-break">
+        className="bg-white rounded-lg shadow p-6 mb-6 border border-gray-200/80 transition-shadow hover:shadow-md print:shadow-none print:border-gray-300">
         
         <div className="flex justify-between items-center cursor-pointer no-print" onClick={onToggle}>
           <div>
@@ -771,6 +763,9 @@ const printStyles = `
       box-shadow: none !important;
       border: none !important; 
     }
+    .print:block {
+      display: block !important;
+    }
     .printable-content-wrapper > section {
       display: block !important;
     }
@@ -833,7 +828,7 @@ const printStyles = `
 
                 {/* --- 核心改动 3: 所有内容始终渲染，用 CSS 控制显示/隐藏 --- */}
                 <div className="mt-6 printable-content-wrapper">
-                    <section className={`${activeTab === 'summary' ? 'block' : 'hidden'}`}>
+                    <section className={`${(isPrintMode || activeTab === 'summary') ? 'block' : 'hidden'}`}>
                         <div className="relative bg-white rounded-xl shadow-lg border border-gray-200/80 overflow-hidden p-8 md:p-10">
                             <div className="absolute inset-0 z-0" style={{ backgroundImage: "url(/grid-bg.svg)", opacity: 0.5 }}></div>
                             <div className="absolute -top-1/4 -right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -z-1"></div>
@@ -850,7 +845,7 @@ const printStyles = `
                         </div>
                     </section>
                     
-                    <section className={`${activeTab === 'suggestions' ? 'block' : 'hidden'}`}>
+                    <section className={`${(isPrintMode || activeTab === 'suggestions') ? 'block' : 'hidden'}`}>
                         <div className="bg-white rounded-xl shadow-lg border border-gray-200/80 p-8 md:p-10">
                             <div className="flex items-start gap-4 mb-6">
                                 <div className="flex-shrink-0 bg-green-100 text-green-600 rounded-lg p-3"><WandSparkles size={28} /></div>
@@ -863,15 +858,12 @@ const printStyles = `
                         </div>
                     </section>
 
-                    <section className={`${activeTab === 'stats' ? 'block' : 'hidden'}`}>
-                        <h2 className="text-2xl font-bold text-blue-800 mb-6 pb-2 border-b border-gray-300">详细统计</h2>
-                        
-                        {activeTab === 'stats' && <StatsTab processedStats={processedStats} />}
+                    <section className={`${(isPrintMode || activeTab === 'stats') ? 'block' : 'hidden'}`}>
+                        <StatsTab processedStats={processedStats} />
                     </section>
 
-                    <section className={`${activeTab === 'interviews' ? 'block' : 'hidden'}`}>
-                        {/* Only render the InterviewsTab if the tab is active */}
-                        {activeTab === 'interviews' && (
+                    <section className={`${(isPrintMode || activeTab === 'interviews') ? 'block' : 'hidden'}`}>
+                        <div className="no-print">
                             <InterviewsTab
                                 interviews={interviews}
                                 openStates={openStates}
@@ -879,7 +871,7 @@ const printStyles = `
                                 handleToggleAllInterviews={handleToggleAllInterviews}
                                 areAllInterviewsOpen={areAllInterviewsOpen}
                             />
-                        )}
+                        </div>
                     </section>
                 </div>
             </div>
