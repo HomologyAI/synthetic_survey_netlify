@@ -15,6 +15,23 @@ import response from "./data/None_1004_202507071546_suzhou_v2_newprompt_50000sum
 const COLORS = ["#0032A0", "#007AFF", "#58A6FF", "#ADC8E6", "#A8DADC", "#457b9d", "#1d3557", "#8ECAE6"];
 
 /**
+ * 为一个行为异常的 react-markdown 环境生成可被解析的 Markdown。
+ * 这个函数会将所有标准的 `**text**` 转换为 ` ** text ** ` 的形式，
+ * 并确保每一个加粗块的后面都有一个空格，以强制解析器闭合。
+ *
+ * @param {string} text - 原始的、标准的 Markdown 字符串。
+ * @returns {string} - 修复后，可供这个特定环境解析的字符串。
+ */
+function fixForBrokenParser(text) {
+  if (typeof text !== 'string') return text;
+
+  // 使用正则表达式全局查找所有 `**...**` 块
+  // $1 会捕获 `**` 之间的内容
+  return text.replace(/\*\*(.*?)\*\*/g, ' **$1** ');
+}
+
+
+/**
  * 修复不规范的 Markdown 加粗语法。
  * GFM (GitHub Flavored Markdown) 要求 `**` 标记和内容之间不能有空格。
  * 此函数会找到例如 "** text **" 或 "** text" 的模式，并将其修正为 "**text**"。
@@ -25,6 +42,7 @@ const COLORS = ["#0032A0", "#007AFF", "#58A6FF", "#ADC8E6", "#A8DADC", "#457b9d"
 function fixMarkdownStrong(text) {
   if (typeof text !== 'string') return text;
 
+  let normalizedText = text.replace(/＊/g, '*');
   // 使用正则表达式查找所有 `**` 包裹的、内部可能含有前后空格的文本
   // \*\*       - 匹配开头的 "**"
   // \s*        - 匹配0个或多个空格（处理 "** text" 的情况）
@@ -36,7 +54,7 @@ function fixMarkdownStrong(text) {
 
   // 使用 "$1" 来引用第一个捕获组（即核心内容），
   // 然后用规范的 "**" 将其重新包裹。
-  return text.replace(regex, '**$1**');
+  return normalizedText.replace(regex, '**$1**');
 }
 
 // --- Add this new component to your file ---
@@ -867,7 +885,7 @@ const printStyles = `
                                 </div>
                                 <hr className="my-6 border-gray-200" />
                                 <div className="prose prose-blue max-w-none prose-h2:text-blue-800 prose-h2:font-semibold prose-strong:text-gray-800">
-                                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={MarkdownComponents}>{fixMarkdownStrong(data.total_summary || "*未提供总体总结。*")}</ReactMarkdown>
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={MarkdownComponents}>{fixMarkdownStrong(fixForBrokenParser(data.total_summary || "*未提供总体总结。*"))}</ReactMarkdown>
                                 </div>
                             </div>
                         </div>
@@ -907,7 +925,7 @@ const printStyles = `
         </div>
     );
 };
-  
+
 export default function SyntheticSurveyPage() {
     return (
         <SyntheticSurveyPageContainer />
