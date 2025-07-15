@@ -7,7 +7,8 @@ import {
   BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from "recharts";
 import remarkGfm from "remark-gfm";
-import rehypeRaw from 'rehype-raw'; 
+import rehypeRaw from 'rehype-raw';
+import remarkBreaks from 'remark-breaks';
 import { FileText, BarChart2, MessageSquare, WandSparkles } from 'lucide-react';
 import response from "./data/None_1004_202507071546_suzhou_v2_newprompt_50000summary_gemini-2.5-pro-preview-05-06_retry_debug1.json";
 
@@ -407,7 +408,7 @@ const OpenEndedSummaryUI = ({ summary }) => {
                 {summary && summary.trim() !== "" ? (
                     <ReactMarkdown 
                         // remark 插件用于处理 Markdown 语法
-                        remarkPlugins={[remarkGfm]}
+                        remarkPlugins={[remarkGfm, remarkBreaks]}
                         // 2. rehype 插件用于处理 HTML 语法
                         rehypePlugins={[rehypeRaw]} 
                         components={MarkdownComponents}>
@@ -579,7 +580,7 @@ const QuestionStats = ({ questionData}) => {
           className={`mt-4 md:mt-0 ${isSideBySideLayout ? "md:col-span-1" : ""}`}
         >
           <div className="flex flex-col justify-center h-full w-full ">
-              {hasSummary && (<div className="bg-blue-50/70 border-l-4 border-blue-400 p-4 rounded-r-md mb-4 print:bg-blue-50/70"><h4 className="font-bold text-blue-800 mb-2">结果分析与总结</h4><div className="prose prose-sm max-w-none prose-p:text-gray-700"><ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={MarkdownComponents}>{fixMarkdownStrong(summary)}</ReactMarkdown></div></div>)}
+              {hasSummary && (<div className="bg-blue-50/70 border-l-4 border-blue-400 p-4 rounded-r-md mb-4 print:bg-blue-50/70"><h4 className="font-bold text-blue-800 mb-2">结果分析与总结</h4><div className="prose prose-sm max-w-none prose-p:text-gray-700"><ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw]} components={MarkdownComponents}>{fixMarkdownStrong(summary)}</ReactMarkdown></div></div>)}
               {answerCount > 0 && (<div>
                 <button onClick={toggleOptions} className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1 no-print">
                   {showOptions ? "隐藏详细数据" : `查看所有选项 (${answerCount}条)`}
@@ -711,7 +712,7 @@ const InterviewRecord = memo(({
               <div className="mt-6">
                 <h4 className="font-semibold mb-2 text-gray-700 text-sm">访谈总结</h4>
                 <div className="bg-yellow-50/80 print:bg-yellow-50/80 p-4 rounded-lg border border-yellow-200/80 text-sm text-yellow-900 prose prose-sm max-w-none">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={MarkdownComponents}>{fixMarkdownStrong(interview.summary)}</ReactMarkdown>
+                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw]} components={MarkdownComponents}>{fixMarkdownStrong(interview.summary)}</ReactMarkdown>
                 </div>
               </div>
             )}
@@ -885,7 +886,7 @@ const printStyles = `
                                 </div>
                                 <hr className="my-6 border-gray-200" />
                                 <div className="prose prose-blue max-w-none prose-h2:text-blue-800 prose-h2:font-semibold prose-strong:text-gray-800">
-                                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={MarkdownComponents}>{fixMarkdownStrong(fixForBrokenParser(data.total_summary || "*未提供总体总结。*"))}</ReactMarkdown>
+                                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw]} components={MarkdownComponents}>{fixMarkdownStrong(fixForBrokenParser(data.total_summary || "*未提供总体总结。*"))}</ReactMarkdown>
                                 </div>
                             </div>
                         </div>
@@ -899,7 +900,7 @@ const printStyles = `
                             </div>
                             <hr className="my-6 border-gray-200" />
                             <div className="prose prose-lg max-w-none prose-h3:text-gray-700 prose-li:my-1">
-                                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={MarkdownComponents}>{fixMarkdownStrong(data.suggestion) || "*暂无决策建议。*"}</ReactMarkdown>
+                                <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw]} components={MarkdownComponents}>{fixMarkdownStrong(data.suggestion) || "*暂无决策建议。*"}</ReactMarkdown>
                             </div>
                         </div>
                     </section>
