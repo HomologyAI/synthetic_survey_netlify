@@ -9,7 +9,7 @@ import {
 import remarkGfm from "remark-gfm";
 import rehypeRaw from 'rehype-raw'; 
 import { FileText, BarChart2, MessageSquare, WandSparkles } from 'lucide-react';
-import response from "./data/None_1004_202507071546_suzhou_v2_newprompt_50000summary_gemini-2.5-pro-preview-05-06_retry_addxiangou_fix.json";
+import response from "./data/None_1004_202507152126_GENESIS_50000summary_new_gemini-2.5-pro-preview-05-06.json";
 
 
 const COLORS = ["#0032A0", "#007AFF", "#58A6FF", "#ADC8E6", "#A8DADC", "#457b9d", "#1d3557", "#8ECAE6"];
