@@ -646,7 +646,7 @@ const InterviewRecord = memo(({
 
     return (
       <div 
-        className="bg-white rounded-lg shadow p-6 mb-6 border border-gray-200/80 transition-shadow hover:shadow-md print:shadow-none print:border-gray-300">
+        className={`bg-white rounded-lg shadow p-6 mb-6 border border-gray-200/80 transition-shadow hover:shadow-md print:shadow-none print:border-gray-300 interview-avoid-break ${shouldBeOpen ? 'force-expand-interviews' : ''}`}>
         <div className="flex justify-between items-center cursor-pointer no-print" onClick={onToggle}>
           <div>
             <h3 className="text-base font-semibold text-gray-800">访谈记录 #{index + 1}: {consumer.name || "匿名"}</h3>
@@ -661,7 +661,7 @@ const InterviewRecord = memo(({
           </div>
         </div>
         
-        <div className="hidden print:block border-b border-gray-200 pb-4 mb-4">
+        <div className="hidden print:block interview-record-header border-b border-gray-200 pb-4 mb-4">
             <h3 className="text-base font-semibold text-gray-800">访谈记录 #{index + 1}: {consumer.name || "匿名"}</h3>
             <div className="text-xs text-gray-500 mt-1">{consumerInfo}</div>
             {consumer.description && (<div className="text-xs text-gray-500 mt-1 italic">{consumer.description}</div>)}
@@ -670,7 +670,7 @@ const InterviewRecord = memo(({
         <div 
             className={`transition-all duration-500 ease-in-out overflow-hidden ${
                 shouldBeOpen ? 'max-h-max mt-6 pt-6 border-t border-gray-200' : 'max-h-0'
-            } force-print-expand-interview`}
+            } force-print-expand-interview ${shouldBeOpen ? 'force-expand-interviews' : ''}`}
         >
             <div>
               <h4 className="font-semibold mb-3 text-gray-700 text-sm">访谈内容 (中文)</h4>
@@ -679,7 +679,7 @@ const InterviewRecord = memo(({
                 const a_id = `match-${index}-${chatIndex}-a`;
 
                 return (
-                    <div key={chatIndex} className="mb-4">
+                    <div key={chatIndex} className="mb-4 interview-qa-item">
                       <div className="bg-blue-50 print:bg-blue-50 p-3 rounded-lg text-sm">
                         <span className="font-semibold text-blue-800 print:text-blue-800">问:</span>
                         <span className="text-gray-800 print:text-gray-800 ml-2">
@@ -734,6 +734,7 @@ const SyntheticSurveyPageContainer = () => {
         interviews.reduce((acc, _, index) => ({ ...acc, [index]: false }), {})
     );
     const [isPrintMode, setIsPrintMode] = useState(false);
+    const [isInterviewPrintMode, setIsInterviewPrintMode] = useState(false);
 
 
     // --- 数据和事件处理函数 (保持不变) ---
@@ -760,7 +761,7 @@ const SyntheticSurveyPageContainer = () => {
     };
     const areAllInterviewsOpen = useMemo(() => Object.values(openStates).every(Boolean), [openStates]);
   
-const printStyles = `
+  const printStyles = `
   /* --- 模拟打印模式的样式 --- */
   .print-mode-active .no-print {
     display: none !important;
@@ -782,7 +783,51 @@ const printStyles = `
       page-break-inside: avoid;
   }
 
+  /* --- 访谈记录专用打印预览模式样式 --- */
+  .interview-print-mode-active .no-print {
+    display: none !important;
+  }
 
+  /* 只显示访谈记录部分 */
+  .interview-print-mode-active .printable-content-wrapper > section {
+    display: none !important;
+  }
+  .interview-print-mode-active .printable-content-wrapper > section.interview-section {
+    display: block !important;
+  }
+
+  /* 访谈记录打印预览时的样式优化 */
+  .interview-print-mode-active .interview-avoid-break {
+    margin-bottom: 1rem !important;
+    padding: 1rem !important;
+  }
+
+  /* 在访谈记录打印模式下，强制展开所有访谈 */
+  .interview-print-mode-active .force-expand-interviews {
+    max-height: none !important;
+    overflow: visible !important;
+    height: auto !important;
+    margin-top: 1.5rem !important;
+    padding-top: 1.5rem !important;
+    border-top-width: 1px !important;
+  }
+
+  /* 访谈记录打印模式下的标题样式 */
+  .interview-print-mode-active .interview-print-title {
+    margin-bottom: 1rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+
+  /* 访谈记录打印模式下的内容显示 */
+  .interview-print-mode-active .interview-print-content {
+    display: block !important;
+    padding: 0 !important;
+  }
+
+  /* 访谈记录打印模式下显示访谈记录标题 */
+  .interview-print-mode-active .interview-record-header {
+    display: block !important;
+  }
 
   /* --- 保留部分：用于真正的打印操作 (当用户按 Ctrl+P) --- */
   @media print {
@@ -790,48 +835,159 @@ const printStyles = `
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
     }
+    
+    /* 减少页面边距 */
+    @page {
+      margin: 0.5in;
+    }
+    
+    body {
+      background-color: #fff !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    
     .no-print {
       display: none !important;
     }
-    body {
-      background-color: #fff !important;
-    }
-    .force-print-block {
-        display: block !important;
-        max-height: none !important;
-        overflow: visible !important;
-    }
+    
+    /* 打印容器优化 */
     .print-container {
       max-width: 100% !important;
       width: 100% !important;
       margin: 0 !important;
-      padding: 10px !important;
+      padding: 8px !important; /* 减少内边距 */
       box-shadow: none !important;
       border: none !important; 
     }
-    .print:block {
+    
+    /* === 核心：控制访谈记录的分页行为 === */
+    
+    /* 访谈记录标题后不强制分页 */
+    .interview-print-title {
+      margin-bottom: 1rem !important;
+      padding-bottom: 0.5rem !important;
+      font-size: 1.5rem !important;
+      page-break-after: avoid !important;
+      text-align: center;
+      font-weight: bold;
+      color: #1e3a8a;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    
+    /* 访谈记录容器连续流动 */
+    .interview-print-content {
+      page-break-before: avoid !important;
+      page-break-after: avoid !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    
+    .interview-print-content .space-y-6 {
+      page-break-before: avoid !important;
+      page-break-after: avoid !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    
+    /* 重置space-y-6的影响，让访谈记录紧密排列 */
+    .interview-print-content .space-y-6 > * {
+      margin-top: 0 !important;
+      margin-bottom: 0.75rem !important;
+    }
+    
+    .interview-print-content .space-y-6 > *:first-child {
+      margin-top: 0 !important;
+    }
+    
+    .interview-print-content .space-y-6 > *:last-child {
+      margin-bottom: 0 !important;
+    }
+    
+    /* 访谈记录卡片：防止记录之间强制分页，但允许内部合理分页 */
+    .interview-avoid-break {
+      break-inside: avoid !important;           /* 尽量避免访谈记录内部被切断 */
+      page-break-inside: avoid !important;      /* 兼容性 */
+      page-break-before: avoid !important;      /* 防止访谈记录前面强制分页 */
+      page-break-after: avoid !important;       /* 防止访谈记录后面强制分页 */
+      margin: 0 !important;
+      margin-bottom: 0.75rem !important;
+      padding: 0.75rem !important;
+    }
+    
+    /* 访谈内容区域 */
+    .force-expand-interviews {
+      margin: 0 !important;
+      margin-top: 0.25rem !important;
+      padding: 0 !important;
+      padding-top: 0.25rem !important;
+      break-inside: auto !important;      /* 允许跨页，但避免不合适的断点 */
+      page-break-inside: auto !important;
+    }
+    
+    /* 问答区域：尽量不分页，但如果访谈很长就允许在问答之间分页 */
+    .interview-qa-item {
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
+      margin: 0 !important;
+      margin-bottom: 0.25rem !important;
+    }
+    
+    /* 如果访谈记录太长，允许在每3个问答后分页 */
+    .interview-qa-item:nth-child(3n) {
+      break-inside: auto !important;
+      page-break-inside: auto !important;
+      page-break-after: auto !important;
+    }
+    
+    /* 访谈记录头部 */
+    .interview-record-header {
+      margin: 0 !important;
+      margin-bottom: 0.5rem !important;
+      padding: 0 !important;
+      padding-bottom: 0.25rem !important;
+      page-break-after: avoid !important;
+    }
+    
+    /* 强制移除所有隐藏元素可能占用的空间 */
+    .hidden {
+      display: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      height: 0 !important;
+    }
+    
+    /* 其他现有的打印样式保持不变 */
+    .force-print-block {
+      display: block !important;
+      max-height: none !important;
+      overflow: visible !important;
+    }
+    
+    .print\\:block {
       display: block !important;
     }
+    
     .printable-content-wrapper > section {
       display: block !important;
     }
 
-    .printable-avoid-break,
-    .interview-avoid-break { /* 把访谈记录的规则也合并进来 */
-        break-inside: avoid;
-        page-break-inside: avoid;
+    .printable-avoid-break {
+      break-inside: avoid;
+      page-break-inside: avoid;
     }
     
     .force-print-expand,
     .force-print-expand-interview {
-        max-height: none !important;
-        overflow: visible !important;
-        height: auto !important;
+      max-height: none !important;
+      overflow: visible !important;
+      height: auto !important;
     }
+    
     .force-print-expand-interview {
-        margin-top: 1.5rem !important;
-        padding-top: 1.5rem !important;
-        border-top-width: 1px !important;
+      margin-top: 0.5rem !important;
+      padding-top: 0.5rem !important;
+      border-top-width: 1px !important;
     }
   }
 `;
@@ -844,31 +1000,65 @@ const printStyles = `
                     w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 print-container
                     transition-all duration-300
                     ${isPrintMode ? 'max-w-full print-mode-active' : 'max-w-[80vw]'}
+                    ${isInterviewPrintMode ? 'max-w-full interview-print-mode-active' : ''}
                 `}
             >
                 
                 {/* --- 核心改动 2: 添加打印按钮 --- */}
-                <div className="flex justify-end mb-4 no-print">
-                  <button
-                      // 修改 onClick 行为：切换 isPrintMode 的状态
-                      onClick={() => setIsPrintMode(prev => !prev)}
-                      className="bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-                  >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          {/* 可以根据模式切换图标，这里为了简单先用一个 */}
-                          <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                          <rect x="6" y="14" width="12" height="8"></rect>
-                      </svg>
-                      {/* 根据 isPrintMode 状态动态显示文本 */}
-                      {isPrintMode ? '返回阅读模式' : '进入打印预览'}
-                  </button>
-                </div>
-                
-                <h1 className="text-3xl sm:text-4xl font-bold text-center text-blue-900 mb-4">{surveyTopic ? `${surveyTopic} - 调查结果报告` : "调查结果报告"}</h1>
-                <p className="text-center text-gray-500 mb-8 no-print">一份全面的用户洞察与数据分析报告</p>
+                <div className="flex justify-end gap-3 mb-4 no-print">
+                    <button
+                        onClick={() => {
+                            setIsInterviewPrintMode(prev => !prev);
+                            if (!isInterviewPrintMode) {
+                                setIsPrintMode(false); // 关闭完整报告打印预览模式
+                            }
+                        }}
+                        className="bg-green-600 text-white hover:bg-green-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                        {isInterviewPrintMode ? '返回阅读模式' : '访谈记录打印预览'}
+                    </button>
+                    
+                    <button
+                        onClick={() => {
+                            setIsPrintMode(prev => !prev);
+                            if (!isPrintMode) {
+                                setIsInterviewPrintMode(false); // 关闭访谈记录打印预览模式
+                            }
+                        }}
+                        className="bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            {/* 可以根据模式切换图标，这里为了简单先用一个 */}
+                                            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                                            <rect x="6" y="14" width="12" height="8"></rect>
+                                        </svg>
+                        {isPrintMode ? '返回阅读模式' : '完整报告打印预览'}
+                    </button>
+                  </div>
+                  
+                  {/* 在访谈记录打印预览模式下隐藏原标题 */}
+                  <div className={isInterviewPrintMode ? 'hidden' : 'block'}>
+                      <h1 className="text-3xl sm:text-4xl font-bold text-center text-blue-900 mb-4">
+                          {surveyTopic ? `${surveyTopic} - 调查结果报告` : "调查结果报告"}
+                      </h1>
+                      <p className="text-center text-gray-500 mb-8 no-print">一份全面的用户洞察与数据分析报告</p>
+                  </div>
 
-                <div className="no-print">
+                  {/* 访谈记录打印预览模式的专用标题 */}
+                  {isInterviewPrintMode && (
+                      <div className="interview-print-title">
+                          {surveyTopic ? `${surveyTopic} - 访谈记录` : "访谈记录"}
+                      </div>
+                  )}
+                <div className={`no-print ${isInterviewPrintMode ? 'hidden' : 'block'}`}>
                     <ReportTabs activeTab={activeTab} onTabClick={setActiveTab} />
                 </div>
 
@@ -907,8 +1097,8 @@ const printStyles = `
                     <section className={`${(isPrintMode || activeTab === 'stats') ? 'block' : 'hidden'}`}>
                         <StatsTab processedStats={processedStats} />
                     </section>
-
-                    <section className={`${(isPrintMode || activeTab === 'interviews') ? 'block' : 'hidden'}`}>
+                    
+                    <section className={`interview-section ${(isPrintMode || activeTab === 'interviews') ? 'block' : 'hidden'}`}>
                         <div className="no-print">
                             <InterviewsTab
                                 interviews={interviews}
@@ -918,10 +1108,29 @@ const printStyles = `
                                 areAllInterviewsOpen={areAllInterviewsOpen}
                             />
                         </div>
+                        
+                        {/* 访谈记录打印预览模式下的内容 */}
+                        {isInterviewPrintMode && (
+                            <div className="interview-print-content">
+                                <div className="space-y-6">
+                                    {interviews.map((interview, index) => (
+                                        <InterviewRecord
+                                            key={`print-interview-${interview.id || index}`}
+                                            interview={interview}
+                                            index={index}
+                                            isOpen={true} // 在打印模式下强制展开所有访谈
+                                            onToggle={() => {}} // 在打印模式下禁用切换
+                                            searchQuery=""
+                                            currentMatchId=""
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </section>
                 </div>
             </div>
-            <BackToTopButton />
+            {!isInterviewPrintMode && <BackToTopButton />}
         </div>
     );
 };
