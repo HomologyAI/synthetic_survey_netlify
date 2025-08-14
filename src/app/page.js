@@ -9,7 +9,7 @@ import {
 import remarkGfm from "remark-gfm";
 import rehypeRaw from 'rehype-raw'; 
 import { FileText, BarChart2, MessageSquare, WandSparkles } from 'lucide-react';
-import response from "./data/synthetic_survey_summary_0814_5.json";
+import response from "./data/synthetic_survey_summary_50.json";
 
 
 const COLORS = ["#0032A0", "#007AFF", "#58A6FF", "#ADC8E6", "#A8DADC", "#457b9d", "#1d3557", "#8ECAE6"];
