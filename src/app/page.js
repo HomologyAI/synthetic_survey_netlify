@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect,useCallback, memo} from "react";
+import { useState, useMemo, useEffect, useRef, useCallback, memo} from "react";
 import ReactMarkdown from "react-markdown";
 import MarkdownComponents from "../../demo/MarkdownComponents";
 import {
@@ -499,17 +499,21 @@ const QuestionStats = ({ questionData}) => {
     // --- Render logic for non-open-ended questions ---
     const isSideBySideLayout = chartType === 'pie';
     const toggleOptions = () => setShowOptions(!showOptions);
+    const chartContainerRef = useRef(null);
     const renderCompactLegend = (props) => {
         const { payload } = props;
         return (
-          <ul className="space-y-2 text-sm text-gray-600">
-            {payload?.map((entry, index) => (
-              <li key={`item-${index}`} className="flex items-center">
-                <div className="w-2.5 h-2.5 rounded-full mr-2 flex-shrink-0" style={{ backgroundColor: entry.color }}/>
-                <span className="truncate" title={entry.value}>{entry.value}</span>
-              </li>
-            ))}
-          </ul>
+          <div className="flex flex-col justify-center h-full">
+            <ul className="space-y-2 text-sm text-gray-600"
+              style={{ maxWidth: chartContainerRef.current ? chartContainerRef.current?.clientWidth / 2 : "50%"}}>
+              {payload?.map((entry, index) => (
+                <li key={`item-${index}`} className="flex items-center">
+                  <div className="w-2.5 h-2.5 rounded-full mr-2 flex-shrink-0" style={{ backgroundColor: entry.color }}/>
+                  <span className="break-words" title={entry.value}>{entry.value}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         );
       };
     const RADIAN = Math.PI / 180;
@@ -539,7 +543,7 @@ const QuestionStats = ({ questionData}) => {
           <div
             className={`flex-grow ${
               isSideBySideLayout
-                ? "grid grid-cols-1 md:grid-cols-2 md:gap-8" // 使用 Grid 布局
+                ? "grid grid-cols-1 md:grid-cols-2 md:gap-8 items-center" // 使用 Grid 布局，添加垂直居中
                 : "flex flex-col" // 保持原有布局
             }`}
           >
@@ -547,6 +551,7 @@ const QuestionStats = ({ questionData}) => {
               <div
                 className={`h-96 ${isSideBySideLayout ? "md:col-span-1" : "w-full"} 
                 ${chartType === 'bar' ? 'printable-avoid-break' : ''}`}
+                ref={chartContainerRef}
               >
                 <ResponsiveContainer width="100%" height="100%">
                   {chartType === "pie" ? (
