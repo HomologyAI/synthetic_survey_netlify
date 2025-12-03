@@ -485,17 +485,6 @@ const QuestionStats = ({ questionData}) => {
         return chartData.reduce((sum, entry) => sum + (entry.value || 0), 0)
     }, [chartData, question_type]);
 
-    
-    if (question_type === 'open_ended') {
-        return (
-            <div className="bg-white border border-gray-200/80 rounded-xl shadow-md p-6 flex flex-col lg:col-span-2 question-stats-card">
-              <h3 className="text-lg font-semibold text-blue-900 mb-4 pb-4 border-b border-gray-200">{question}</h3>
-              {/* --- 直接调用新的、简洁的UI组件 --- */}
-              <OpenEndedSummaryUI summary={summary} /> 
-            </div>
-        );
-    }
-
     // --- Render logic for non-open-ended questions ---
     const isSideBySideLayout = chartType === 'pie';
     const toggleOptions = () => setShowOptions(!showOptions);
@@ -533,6 +522,16 @@ const QuestionStats = ({ questionData}) => {
     };
     const dynamicBarSize = answerCount > 10 ? 20 : 35;
     
+    if (question_type === 'open_ended') {
+        return (
+            <div className="bg-white border border-gray-200/80 rounded-xl shadow-md p-6 flex flex-col lg:col-span-2 question-stats-card">
+              <h3 className="text-lg font-semibold text-blue-900 mb-4 pb-4 border-b border-gray-200">{question}</h3>
+              {/* --- 直接调用新的、简洁的UI组件 --- */}
+              <OpenEndedSummaryUI summary={summary} /> 
+            </div>
+        );
+    }
+
         return (
         <div 
           className={`
